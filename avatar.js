@@ -556,12 +556,20 @@
     // ---------- 이스터에그: 서로 다른 답변 5개에 별점 → 학번 입력창(가산점). 학번은 서버의 별도 저장소에만 ----------
     const RATE_GOAL = 5;
     const ls = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
-    function easterEgg(rid) {
+    // 브라우저 기록(localStorage)과 서버의 평가 수 중 큰 쪽으로 판단한다 — 옛 탭·캐시·저장소 차단에도 뜨게(2026-10-03)
+    async function easterEgg(rid) {
+      if (ls("philo-sid-done") === "1" || document.querySelector(".egg")) return;
       let rated = [];
       try { rated = JSON.parse(ls("philo-rated") || "[]"); } catch (e) { rated = []; }
       if (rid && !rated.includes(rid)) { rated.push(rid); ls("philo-rated", JSON.stringify(rated.slice(-50))); }
-      if (rated.length >= RATE_GOAL && ls("philo-sid-done") !== "1" && !document.querySelector(".egg")) sidDialog();
+      let n = rated.length;
+      try {
+        const r = await fetch(window.PHILO_API_BASE.replace(/\/$/, "") + "/api/sid?vid=" + encodeURIComponent(window.philoVid ? window.philoVid() : ""), { cache: "no-store" });
+        if (r.ok) n = Math.max(n, (await r.json()).count || 0);
+      } catch (e) { /* 서버 확인 실패 시 브라우저 기록만 */ }
+      if (n >= RATE_GOAL && !document.querySelector(".egg")) sidDialog();
     }
+    if (window.PHILO_API_BASE) setTimeout(() => easterEgg(null), 2500); // 이미 다섯 번 넘게 평가한 학생은 열자마자
     function sidDialog() {
       const d = document.createElement("div"); d.className = "egg";
       d.innerHTML = `<div class="egg-box" role="dialog" aria-label="이스터에그">
