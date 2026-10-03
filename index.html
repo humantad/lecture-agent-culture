@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>철학으로 읽는 사회와 문화 · 학습 도우미</title>
+<script src="vendor/vis-network.min.js"></script>
+<script src="avatar.js"></script>
+<style>
+:root{
+  --bg:#f6f5f2; --panel:#ffffff; --ink:#1f2328; --muted:#646b73; --line:#e3e0da;
+  --accent:#3d5a80; --accent-ink:#ffffff; --me:#e8eef6;
+  --warn-bg:#fff4dc; --warn-ink:#7a4b00; --warn-line:#f0c46a;
+  --beyond-bg:#f3eefb; --beyond-line:#b9a3e0;
+  --weak:#c0392b; --hidden:#8e44ad; --graph-bg:#fbfaf8; --av-bg:#efe9df;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#16181c; --panel:#1f2227; --ink:#e7e9ec; --muted:#9aa1a9; --line:#2f333a;
+    --accent:#7fa6d6; --accent-ink:#0f1318; --me:#253245;
+    --warn-bg:#3a2d10; --warn-ink:#f5d38e; --warn-line:#8a6a22;
+    --beyond-bg:#2a2436; --beyond-line:#6f5a99;
+    --weak:#ef7b6d; --hidden:#c39be0; --graph-bg:#1a1c20; --av-bg:#2b2e34;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.65 "Pretendard","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif}
+.app{display:grid;grid-template-columns:270px 1fr;grid-template-rows:minmax(0,1fr);height:100vh;height:100dvh}
+main{min-height:0}
+#side{background:var(--panel);border-right:1px solid var(--line);padding:18px 14px;overflow:auto}
+h1{font-size:17px;margin:0 0 2px}
+.sub{color:var(--muted);font-size:12.5px;margin-bottom:14px}
+.label{font-size:12px;color:var(--muted);margin:14px 0 6px;font-weight:600}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{flex:1;padding:7px 4px;border:0;background:transparent;color:var(--ink);cursor:pointer;font:inherit;font-size:13px}
+.seg button.on{background:var(--accent);color:var(--accent-ink)}
+.ph{display:flex;justify-content:space-between;align-items:center;gap:6px;width:100%;text-align:left;padding:7px 9px;margin:2px 0;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--ink);cursor:pointer;font:inherit;font-size:14px}
+.ph:hover{border-color:var(--line)}
+.ph.on{background:var(--me);border-color:var(--accent)}
+.ph small{color:var(--muted);font-size:11.5px;white-space:nowrap}
+.ph[disabled]{opacity:.45;cursor:default}
+.sec{font-size:13px;line-height:1.4}
+main{display:flex;flex-direction:column;min-width:0}
+.tabs{display:flex;gap:4px;padding:10px clamp(16px,4vw,48px) 0;border-bottom:1px solid var(--line);background:var(--panel)}
+.tabs button{border:0;background:transparent;color:var(--muted);padding:8px 14px;cursor:pointer;font:inherit;border-bottom:2px solid transparent}
+.tabs button.on{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.view{flex:1;display:none;flex-direction:column;min-height:0}
+.view.on{display:flex}
+#log{flex:1;overflow:auto;padding:22px clamp(16px,4vw,48px)}
+.msg{max-width:760px;margin:0 auto 16px}
+.me{background:var(--me);padding:10px 14px;border-radius:12px;margin-left:auto;width:fit-content;max-width:85%}
+.bot{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.who{font-size:12px;color:var(--muted);margin-bottom:4px}
+.notice{background:var(--warn-bg);color:var(--warn-ink);border:1px solid var(--warn-line);border-radius:8px;padding:8px 11px;font-size:13.5px;margin-bottom:10px}
+.beyond{background:var(--beyond-bg);border-left:3px solid var(--beyond-line);border-radius:6px;padding:8px 11px;margin-top:10px;font-size:14px}
+.beyond b{display:block;font-size:12px;margin-bottom:2px}
+.qb{margin-top:10px;padding-top:9px;border-top:1px dashed var(--line);font-size:14px}
+.qb::before{content:"생각해 볼 질문 · ";color:var(--muted);font-size:12px}
+.src{margin-top:10px;font-size:12.5px;color:var(--muted)}
+.src details{margin-top:3px}
+.src summary{cursor:pointer}
+pre.ex{white-space:pre-wrap;font:inherit;font-size:12.5px;background:var(--bg);padding:8px;border-radius:6px;margin:4px 0}
+.welcome{max-width:760px;margin:6vh auto 0;color:var(--muted)}
+.welcome h2{color:var(--ink);font-size:20px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chips button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:16px;padding:5px 11px;cursor:pointer;font:inherit;font-size:13px}
+form{display:flex;gap:8px;padding:12px clamp(16px,4vw,48px) 16px;border-top:1px solid var(--line);background:var(--panel)}
+textarea{flex:1;resize:none;height:48px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit}
+.btn{padding:0 18px;border:0;border-radius:10px;background:var(--accent);color:var(--accent-ink);font:inherit;cursor:pointer}
+.btn:disabled{opacity:.5}
+/* 분석 */
+#ana{overflow:auto;padding:16px clamp(16px,3vw,32px)}
+.ahead{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 14px;margin-bottom:10px}
+.ahead h2{font-size:18px;margin:0}
+.ahead .meta{color:var(--muted);font-size:12.5px}
+.grid2{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-width:0}
+.card h3{font-size:14px;margin:0 0 8px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+#graph{height:480px;border-radius:8px;background:var(--graph-bg)}
+.toggles{display:flex;gap:4px;flex-wrap:wrap}
+.toggles button{border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:6px;padding:2px 8px;cursor:pointer;font:inherit;font-size:12px}
+.toggles button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:18px;height:0;border-top:3px solid;vertical-align:middle;margin-right:4px}
+.arg{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px}
+.arg h4{margin:0 0 6px;font-size:14px}
+.tag{display:inline-block;font-size:11px;font-weight:700;border-radius:4px;padding:0 5px;margin-right:6px;border:1px solid}
+.tag.pre{color:var(--accent);border-color:var(--accent)}
+.tag.con{color:var(--ink);border-color:var(--ink)}
+.tag.hid{color:var(--hidden);border-color:var(--hidden);border-style:dashed}
+.row{margin:3px 0;font-size:14px}
+.row.hid{color:var(--hidden)}
+.anls{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:13px}
+.cq{margin:4px 0;padding-left:8px;border-left:3px solid var(--line)}
+.cq.weakness{border-left-color:var(--weak)}
+.cq.weakness::before{content:"약점 ";color:var(--weak);font-weight:700;font-size:11.5px}
+.cq button{margin-left:6px;border:0;background:none;color:var(--accent);cursor:pointer;font:inherit;font-size:12px;text-decoration:underline}
+.bars{display:grid;grid-template-columns:auto 1fr auto;gap:2px 8px;align-items:center;font-size:12px;margin-top:6px}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.bar b{display:block;height:100%;background:var(--accent)}
+.hyp{font-size:13.5px;margin:6px 0;padding-left:8px;border-left:3px dotted var(--hidden)}
+.hyp small{color:var(--muted)}
+.empty{color:var(--muted);text-align:center;margin:10vh auto;max-width:520px}
+/* 철학자 아바타 (avatar.js) */
+.anawrap{display:grid;grid-template-columns:minmax(0,1fr) 340px;flex:1;min-height:0}
+.anawrap #ana{min-width:0}
+.anawrap .grid2{grid-template-columns:1fr}
+#avatar{border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-height:0;height:100%;overflow:hidden;padding:14px 14px 10px}
+.anawrap{height:100%;min-height:0;grid-template-rows:minmax(0,1fr)}
+.anawrap #ana{overflow:auto;height:100%}
+.av-stage{position:relative;display:flex;justify-content:center}
+.av-face{width:170px}
+.av-face svg{width:100%;height:auto;display:block}
+.av-eyes{animation:blink 5.5s infinite;transform-box:view-box;transform-origin:100px 98px}
+@keyframes blink{0%,95%,100%{transform:scaleY(1)}97%{transform:scaleY(.08)}}
+.av-face.speaking .av-mouth{animation:talk .17s infinite alternate;transform-box:view-box;transform-origin:100px 134px}
+@keyframes talk{from{transform:scaleY(.5)}to{transform:scaleY(2.7)}}
+.av-face.speaking svg{animation:nod 1.6s ease-in-out infinite}
+@keyframes nod{50%{transform:translateY(1.5px) rotate(.6deg)}}
+.av-bubble{position:absolute;top:4px;left:0;right:0;margin:auto;max-width:300px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 11px;font-size:13px;box-shadow:0 4px 14px #0002}
+.av-head{display:flex;align-items:center;gap:8px;margin:8px 0}
+.av-head b{font-size:16px}
+.av-era{color:var(--muted);font-size:12px;flex:1}
+.av-log{flex:1;overflow:auto;min-height:120px;font-size:14px}
+.av-msg{margin:6px 0;padding:8px 10px;border-radius:10px}
+.av-msg.me{background:var(--me);margin-left:24px}
+.av-msg.bot{background:var(--bg);border:1px solid var(--line);margin-right:8px}
+.av-msg.sys{color:var(--muted);font-size:12.5px;padding:4px 2px}
+.av-form{display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line);background:var(--panel);flex-shrink:0}
+.av-face{flex-shrink:0}
+.av-head,.av-note{flex-shrink:0}
+.av-form input{flex:1;min-width:0;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);font:inherit}
+.av-form .btn{padding:0 14px}
+.av-note{color:var(--muted);font-size:11px;margin:6px 0 0}
+
+/* 개념 패널·비교 지도 */
+.anacol{position:relative;min-width:0;min-height:0;height:100%}
+#graph.tall{height:560px}
+.cmp-heads{display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;padding:0 6px 4px}
+.cmp-item{display:grid;grid-template-columns:auto 1fr;gap:0 8px;width:100%;text-align:left;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:9px;padding:8px 10px;margin:0 0 6px;cursor:pointer;font:inherit}
+.cmp-item:hover{border-color:#d4a017}
+.cmp-item small{color:var(--muted);font-size:11.5px;align-self:center}
+.cmp-item span{grid-column:1/-1;font-size:13px;color:var(--muted)}
+.ph.cmp{border-color:#d4a017;margin-bottom:6px}
+#cpanel{position:absolute;top:0;right:0;bottom:0;width:min(470px,100%);background:var(--panel);border-left:1px solid var(--line);box-shadow:-8px 0 24px #0002;overflow:auto;padding:14px 16px;z-index:3}
+.cp-head{display:flex;align-items:center;gap:8px;position:sticky;top:-14px;background:var(--panel);padding:6px 0;margin:-6px 0 6px;z-index:1}
+.cp-head h3{margin:0;font-size:18px;flex:1}
+.cp-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0}
+.cp-x{border:0;background:none;color:var(--muted);font-size:18px;cursor:pointer;padding:2px 6px}
+.cp-point{background:var(--beyond-bg);border-left:4px solid #d4a017;border-radius:6px;padding:8px 10px;font-weight:600;margin-bottom:8px}
+.cp-point small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.cp-cmp{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.cp-cmp>div{border-top:4px solid;background:var(--bg);border-radius:6px;padding:8px 10px;font-size:13.5px}
+.cp-cmp p{margin:4px 0}
+.cp-cmp small{color:var(--muted);font-size:11.5px}
+.cp-cmp a{color:var(--accent)}
+.cp-slides{display:grid;gap:10px}
+.cp-slides figure{margin:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;cursor:zoom-in;background:var(--bg)}
+.cp-slides img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover}
+.cp-slides figcaption{font-size:12px;color:var(--muted);padding:5px 8px}
+.lightbox{position:fixed;inset:0;background:#000c;z-index:20;display:flex;align-items:center;justify-content:center;padding:16px;cursor:zoom-out}
+.lightbox img{max-width:100%;max-height:100%;border-radius:6px;box-shadow:0 10px 40px #000}
+.lightbox button{position:absolute;top:12px;right:16px;border:0;background:none;color:#fff;font-size:26px;cursor:pointer}
+/* 아바타: 눈 깜빡임 · 말할 때 입 벌림 · 머리 끄덕임 · 테두리 */
+.av-lids ellipse{transform-box:fill-box;transform-origin:50% 0;transform:scaleY(0);animation:blink3 5.5s infinite}
+@keyframes blink3{0%,94%,100%{transform:scaleY(0)}96.5%{transform:scaleY(1)}}
+.av-face.speaking .av-head{animation:bob 1.8s ease-in-out infinite;transform-box:view-box;transform-origin:50% 90%}
+@keyframes bob{50%{transform:rotate(.8deg) translateY(1.5px)}}
+.av-face.speaking .av-ring,.av-face.thinking .av-ring{animation:ring 1s ease-in-out infinite}
+@keyframes ring{50%{opacity:.8}}
+@media (max-width:1100px){#cpanel{position:fixed;inset:0;width:auto;z-index:8}.cp-cmp{grid-template-columns:1fr}}
+@media (max-width:1100px){
+  .anawrap{grid-template-columns:minmax(0,1fr);grid-template-rows:auto;overflow:auto;padding-bottom:calc(66px + env(safe-area-inset-bottom))}
+  .anawrap #ana{height:auto;overflow:visible}
+  .anacol{height:auto}
+  #avatar{height:auto;overflow:visible;border-left:0;border-top:1px solid var(--line)}
+  .av-face{width:130px}
+  .av-log{max-height:50vh}
+  /* 화면이 좁으면 입력창을 화면 맨 아래에 고정한다(개념지도·논증 탭이 열려 있을 때만 보임) */
+  .av-form{position:fixed;left:0;right:0;bottom:0;z-index:4;margin:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -4px 14px #0001}
+}
+
+.counts{margin-left:auto;align-self:center;display:flex;gap:12px;font-size:12px;color:var(--muted);padding-right:4px}
+.counts b{color:var(--ink);font-weight:600}
+.egg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+.egg-box{background:var(--panel);color:var(--ink);border-radius:12px;padding:20px 22px;max-width:360px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.25);text-align:center}
+.egg-t{font-size:22px;font-weight:700;margin-bottom:6px}
+.egg-box form{display:flex;gap:8px;margin:10px 0}
+.egg-box input{flex:1;font-size:16px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+.egg-msg{color:var(--muted);font-size:13px;min-height:1em}
+.egg-ok{font-size:16px;font-weight:600;line-height:1.5}
+.egg-x{margin-top:6px;background:none;border:0;color:var(--muted);cursor:pointer;font-size:13px}
+.egg-box .btn.egg-x{background:var(--accent);color:#fff;padding:6px 16px;border-radius:8px}
+.av-slides{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 4px}
+.av-slides figure{margin:0;flex:1 1 180px;max-width:320px;cursor:zoom-in;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--panel)}
+.av-slides img{display:block;width:100%;height:auto}
+.av-slides figcaption{font-size:11px;color:var(--muted);padding:3px 6px}
+.rate{display:flex;flex-wrap:wrap;align-items:center;gap:1px;margin-top:8px;padding-top:6px;border-top:1px dashed var(--line)}
+.rate-l{font-size:12px;color:var(--muted);margin-right:6px;white-space:nowrap;flex-basis:100%;margin-bottom:2px}
+.rate button{border:0;background:none;padding:0 2px;font-size:22px;line-height:1;cursor:pointer;color:#d6d0c4}
+.rate button.hov,.rate button.on{color:#f2b01e}
+.rate:hover button.on:not(.hov){color:#d6d0c4}
+.rate-msg{font-size:12px;color:var(--muted);margin-left:8px;white-space:nowrap}
+@media (max-width:760px){.counts{flex-direction:column;gap:0;font-size:11px}}
+.mini{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:5px;padding:0 6px;font:inherit;font-size:11px;cursor:pointer;opacity:.8}
+.mini.on{background:var(--ink);color:var(--panel);opacity:1}
+.mini:disabled{cursor:default;opacity:.4}
+#srcs{overflow:auto;padding:16px clamp(16px,3vw,32px)}
+.author{margin-bottom:16px}
+.author h2{font-size:17px;margin:0}
+.author .meta{color:var(--muted);font-size:12.5px;margin-bottom:6px}
+.work{border-top:1px solid var(--line);padding:8px 0}
+.work h3{font-size:15px;margin:0;display:block}
+.work .orig{font-style:italic;color:var(--muted);font-size:13px}
+table.cite{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:6px}
+table.cite td{border-top:1px dashed var(--line);padding:4px 6px;vertical-align:top}
+table.cite td:first-child{white-space:nowrap;font-weight:600;color:var(--accent);width:1%}
+table.cite td:last-child{white-space:nowrap;color:var(--muted);font-size:12px;width:1%}
+.srcfilter{margin-bottom:10px}
+.srcfilter input{width:min(360px,100%);padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);font:inherit}
+.menu{display:none}
+@media (max-width:900px){.grid2{grid-template-columns:1fr} #graph{height:380px}}
+@media (max-width:760px){
+  .app{grid-template-columns:1fr}
+  #side{display:none;position:fixed;inset:0 20% 0 0;z-index:5;box-shadow:0 0 30px #0005}
+  #side.open{display:block}
+  .menu{display:inline-block;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:6px 10px;margin:10px 16px 0;font:inherit}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside id="side">
+    <h1 id="ctitle">철학적 사유의 향연</h1>
+    <div class="sub" id="csub">학습 도우미 · 수업 자료 기반</div>
+    <div id="chatSide">
+      <div class="label">방식</div>
+      <div class="seg" id="mode">
+        <button data-m="tutor" class="on">해설 듣기</button>
+        <button data-m="persona">철학자와 대화</button>
+      </div>
+    </div>
+    <div class="label">철학자</div>
+    <div id="phs"></div>
+    <div id="anaSide" hidden>
+      <div class="label">분석할 절</div>
+      <div id="secs"></div>
+    </div>
+    <div class="label" id="llm"></div>
+  </aside>
+  <main>
+    <button class="menu" id="menu">☰ 메뉴</button>
+    <div class="tabs" id="tabs"><button data-t="chat" class="on">대화</button><button data-t="ana">개념지도 · 논증</button><button data-t="src">원전 목록</button><span id="counts" class="counts" hidden></span></div>
+    <section class="view on" id="v-chat">
+      <div id="log"></div>
+      <form id="f">
+        <textarea id="q" placeholder="수업에서 배운 내용에 대해 물어보세요 (Enter 전송, Shift+Enter 줄바꿈)"></textarea>
+        <button class="btn" id="send">보내기</button>
+      </form>
+    </section>
+    <section class="view" id="v-ana"><div class="anawrap"><div class="anacol"><div id="ana"></div><div id="cpanel" hidden></div></div><aside id="avatar"></aside></div></section>
+    <section class="view" id="v-src"><div id="srcs"></div></section>
+  </main>
+</div>
+<script>window.PHILO_STATIC=true;window.PHILO_API_BASE="https://lecture-agent-culture-api.vercel.app";window.PHILO_ASSET="";window.PHILO_SLIDES="slides/";</script>
+<script>
+const $=s=>document.querySelector(s);
+// 정적 사이트(GitHub Pages 등, export_static.py)에서는 /api/... 대신 data/*.json 을 읽는다. 대화·새 분석은 서버 전용.
+const STATIC=!!window.PHILO_STATIC;
+function api(path,opt){
+  if(!STATIC) return fetch(path,opt);
+  if(path==="/api/ask"&&window.PHILO_API_BASE) return fetch(window.PHILO_API_BASE.replace(/\/$/,"")+path,opt);
+  if(opt?.method==="POST") return Promise.resolve(new Response(JSON.stringify({detail:"공개 사이트에서는 사용할 수 없는 기능입니다."}),{status:403}));
+  const m=path.match(/^\/api\/(course|sections|sources|conceptmap\/[\w-]+|analysis\/[\w-]+)$/);
+  return m?fetch(`data/${m[1]}.json`):Promise.resolve(new Response("{}",{status:404}));
+}
+// 이용 통계(공개 사이트에서만): 브라우저가 만든 무작위 ID + 방문·탭 기록. 이름·질문 내용은 보내지 않는다.
+window.philoVid=()=>{try{let v=localStorage.getItem("philo-vid");if(!v){v=Math.random().toString(36).slice(2)+Date.now().toString(36);localStorage.setItem("philo-vid",v);}return v;}catch(e){return "";}};
+// 교수자 제외: 주소 끝에 ?staff=1 로 한 번 열면 이 브라우저는 방문·질문·별점 집계에서 빠진다(?staff=0 으로 해제).
+window.philoStaff=()=>{try{const q=new URLSearchParams(location.search).get("staff");if(q==="1")localStorage.setItem("philo-staff","1");if(q==="0")localStorage.removeItem("philo-staff");return localStorage.getItem("philo-staff")==="1";}catch(e){return false;}};
+// 오늘/누적 방문자·질문 수(학생에게도 보임)
+window.refreshCounts=()=>{ if(!window.PHILO_API_BASE) return;
+  fetch(window.PHILO_API_BASE.replace(/\/$/,"")+"/api/counts").then(r=>r.json()).then(c=>{ if(!c.enabled) return;
+    const el=document.getElementById("counts"); el.hidden=false;
+    el.innerHTML=`<span>오늘 방문 <b>${c.today_visitors}</b> · 누적 <b>${c.total_visitors}</b></span><span>오늘 질문 <b>${c.today_questions}</b> · 누적 <b>${c.total_questions}</b></span>`+(philoStaff()?`<span title="이 브라우저는 집계에서 빠짐(?staff=0 으로 해제)">· 교수자</span>`:"");
+  }).catch(()=>{}); };
+function hit(tab,first){ if(!window.PHILO_API_BASE) return;
+  fetch(window.PHILO_API_BASE.replace(/\/$/,"")+"/api/hit",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({vid:philoVid(),tab,first,staff:philoStaff()}),keepalive:true}).catch(()=>{}); }
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const para=s=>esc(s).split(/\n{2,}/).map(p=>`<p style="margin:0 0 8px">${p.replace(/\n/g,"<br>")}</p>`).join("");
+let course=null, mode="tutor", ph=null, history=[], tab="chat", sections=[], canAnalyze=false, curKey=null, network=null;
+
+// ---------- 시각 어휘 (frontend/src/visualVocabulary.js 와 같은 값, docs/relations_taxonomy_v3.md) ----------
+const TIER={priority:{size:30,color:"#2471A3"},secondary:{size:20,color:"#5DADE2"},tertiary:{size:13,color:"#AED6F1"}};
+const REL={
+ grounding:["DT","#9B59B6",false,"D1 정초"],causal:["DT","#E74C3C",false,"D2 인과"],constitutive:["DT","#1ABC9C",false,"D3 구성"],
+ conditional:["DT","#27AE60",false,"D4 조건"],dialectical:["DT","#8E44AD",false,"D5 변증법"],negative_positing:["DT","#000000",true,"D6 부정 ✕"],
+ normative:["DT","#2980B9",false,"D7 규범 !"],adequational:["DT","#16A085",false,"D8 적합"],determinable:["DT","#D35400",false,"D9 한정"],
+ contiguity:["NDT","#AAB2B2",true,"S1 근접"],resemblance:["NDT","#9AA3A8",true,"S2 유사"],opposition:["NDT","#E67E22",true,"S3 대립 vs"],
+ analogy:["NDT","#95A5A6",true,"S4 유비"],lineage:["NDT","#7F8C8D",false,"S5 계보"],taxonomic:["NDT","#AAB7B8",true,"S6 분류"],other:["NDT","#CCCCCC",true,"기타"]};
+const FORM={deductive:"연역",inductive:"귀납",abductive:"가추",analogical:"유비"};
+const HYP={latent_relation:"잠재 관계",implicit_assumption:"숨은 가정",deeper_position:"저자 입장",extended_implication:"확장 함의"};
+
+// ---------- 공통 ----------
+const phName=id=>course.philosophers.find(p=>p.id===id)?.name;
+function renderPhs(){
+  const list=course.philosophers.filter(p=>p.persona);
+  $("#phs").innerHTML=list.map(p=>{
+    const dis=false;
+    const wk=p.weeks.length?p.weeks.join("·")+"주":"";
+    return `<button class="ph ${p.id===ph?"on":""}" data-id="${p.id??""}" ${dis?"disabled":""}><span>${esc(p.name)}</span><small>${wk}</small></button>`;
+  }).join("");
+  $("#phs").querySelectorAll(".ph").forEach(b=>b.onclick=()=>{ph=b.dataset.id||null;history=[];renderPhs();
+    if(tab==="chat") welcome(); else if(tab==="ana"){curKey=null;renderSecs();openDefault();} else renderSources();
+    $("#side").classList.remove("open");});
+}
+$("#tabs").onclick=e=>{const t=e.target.dataset.t;if(!t)return;tab=t;
+  $("#tabs").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
+  ["chat","ana","src"].forEach(v=>$("#v-"+v).classList.toggle("on",t===v));
+  $("#chatSide").hidden=t!=="chat";$("#anaSide").hidden=t!=="ana";
+  renderPhs(); hit(t,false); if(t==="ana") loadSections(); if(t==="src") loadSources();};
+$("#menu").onclick=()=>$("#side").classList.toggle("open");
+
+// ---------- 대화 ----------
+const EXAMPLES={
+  null:["합리론과 경험론은 어떻게 다른가요?","데카르트와 스피노자는 심신 문제를 어떻게 다르게 풀었나요?","칸트의 코페르니쿠스적 전환이 뭔가요?"],
+  descartes:["코기토는 왜 확실한가요?","악령의 가설은 무엇을 의심하게 하나요?","심신이원론의 문제는 무엇인가요?"],
+  spinoza:["신 즉 자연이란 무슨 뜻인가요?","코나투스와 정서는 어떤 관계인가요?","결정론인데 어떻게 자유가 가능한가요?"],
+};
+const examples=()=>course.ui?.examples||EXAMPLES; // 과목 설정(course.json ui.examples)이 있으면 그것을 쓴다
+function welcome(){
+  const p=course.philosophers.find(x=>x.id===ph);
+  const who=mode==="persona"&&p?.persona?`${p.name}와(과) 대화합니다.`:"수업 자료를 바탕으로 해설합니다.";
+  $("#log").innerHTML=`<div class="welcome"><h2>${esc(p?p.name:"전체 범위")}</h2>
+  <p>${who} 답변은 이번 학기 슬라이드에 근거하며, <b>수업 내용을 벗어나는 질문에는 그렇다는 안내가 붙습니다.</b></p>
+  <div class="chips">${(examples()[ph]||examples().null||[]).map(e=>`<button>${esc(e)}</button>`).join("")}</div></div>`;
+  $("#log").querySelectorAll(".chips button").forEach(b=>b.onclick=()=>ask(b.textContent));
+}
+function add(html,cls){const d=document.createElement("div");d.className="msg";d.innerHTML=`<div class="${cls}">${html}</div>`;$("#log").append(d);d.scrollIntoView({behavior:"smooth",block:"end"});return d;}
+function speaker(){const p=course.philosophers.find(x=>x.id===ph);return mode==="persona"&&p?.persona?p.name:"학습 도우미";}
+function renderReply(r){
+  let h=`<div class="who">${esc(speaker())}</div>`;
+  if(r.notice) h+=`<div class="notice">${esc(r.notice)}</div>`;
+  if(r.answer) h+=para(r.answer);
+  if(r.beyond) h+=`<div class="beyond"><b>수업 범위 밖 보충</b>${para(r.beyond)}</div>`;
+  if(r.question_back) h+=`<div class="qb">${esc(r.question_back)}</div>`;
+  if(r.sources?.length) h+=`<div class="src">근거 수업 자료${r.sources.map(s=>`<details><summary>${s.week}주 · ${esc(s.source)} · ${esc(s.locator)}</summary><pre class="ex">${esc(s.excerpt)}</pre></details>`).join("")}</div>`;
+  return h;
+}
+$("#mode").onclick=e=>{const m=e.target.dataset.m;if(!m)return;mode=m;history=[];
+  $("#mode").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.m===m));
+  const p=course.philosophers.find(x=>x.id===ph); if(m==="persona"&&!(p?.persona)) ph=course.philosophers.find(x=>x.persona).id;
+  renderPhs();welcome();};
+$("#q").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){e.preventDefault();$("#f").requestSubmit();}});
+$("#f").onsubmit=e=>{e.preventDefault();ask($("#q").value.trim());};
+async function ask(q){
+  if(!q) return; $(".welcome")?.remove(); $("#q").value=""; $("#send").disabled=true;
+  add(esc(q),"me"); const wait=add(`<div class="who">${esc(speaker())}</div>…`,"bot");
+  try{
+    const res=await api("/api/ask",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({question:q,philosopher:ph,mode,history})});
+    const r=await res.json(); if(!res.ok) throw new Error(r.detail||res.status);
+    wait.firstChild.innerHTML=renderReply(r);
+    history.push({role:"user",content:q},{role:"assistant",content:[r.answer,r.question_back].filter(Boolean).join("\n")});
+    history=history.slice(-12);
+  }catch(err){wait.firstChild.innerHTML=`<div class="notice">오류: ${esc(err.message)}</div>`;}
+  $("#send").disabled=false; $("#q").focus();
+}
+function askFromAnalysis(text){ // 약점 CQ·개념 → 옆의 아바타에게(대화 탭이 없는 공개 사이트에서도 동작)
+  if(avatar){ avatar.prefill(text); $("#avatar").scrollIntoView({block:"nearest"}); return; }
+  $("#tabs").querySelector('[data-t="chat"]')?.click(); ask(text);
+}
+
+// ---------- 개념지도 · 논증 ----------
+// 첫 화면: 수업 핵심어 개념지도(S1 근접). 결정 관계(D1~D9)는 작은 토글로, 기본 꺼짐.
+let showDT=false;
+async function loadSections(){
+  if(!sections.length){const r=await (await api("/api/sections")).json(); sections=r.sections; canAnalyze=r.can_analyze;}
+  renderSecs(); if(!curKey) openDefault();
+}
+function openDefault(){
+  const s=sections.find(x=>!ph||x.philosophers.includes(ph)); if(s) openUnit(`w${String(s.week).padStart(2,"0")}`);
+}
+function renderSecs(){
+  const list=sections.filter(s=>!ph||s.philosophers.includes(ph));
+  let wk=null, html=course.compare?`<button class="ph sec cmp ${curKey==="cmp"?"on":""}" data-k="cmp"><span><b>⚖ ${esc(phName(course.compare[0]))} ↔ ${esc(phName(course.compare[1]))}</b><br><small>같은 개념, 다른 설명</small></span></button>`:"";
+  for(const s of list){
+    if(s.week!==wk){wk=s.week; const k=`w${String(wk).padStart(2,"0")}`;
+      html+=`<div class="label" style="margin-top:8px">${wk}주</div><button class="ph sec ${k===curKey?"on":""}" data-k="${k}"><span><b>${wk}주 전체</b></span><small></small></button>`;}
+    html+=`<button class="ph sec ${s.key===curKey?"on":""}" data-k="${s.key}"><span>${esc(s.title)}</span><small title="논증 분석 ${s.cached?"있음":"없음"}">${s.cached?"●":"○"}</small></button>`;
+  }
+  $("#secs").innerHTML=html;
+  $("#secs").querySelectorAll(".ph").forEach(b=>b.onclick=()=>{openUnit(b.dataset.k);$("#side").classList.remove("open");});
+}
+let avatar=null;
+function avatarFor(week){
+  if(!window.PhiloAvatar) return;
+  if(!avatar) avatar=PhiloAvatar($("#avatar"),{api,askable:!STATIC||!!window.PHILO_API_BASE,
+    name:id=>phName(id)||id, section:()=>curKey&&curKey.includes("-s")?curKey:null, quotesFor:quotesOf,
+    portraitBase:window.PHILO_ASSET!=null?window.PHILO_ASSET+"portraits/":"/static/portraits/"});
+  const id=week==null?ph:phOfWeek(week); if(!id) return;
+  {const p=course.philosophers.find(p=>p.id===id); avatar.setPhilosopher(id,p?.era,p?.portrait_credit);}
+}
+async function quotesOf(id){ // 수업 슬라이드에 인용된 그 철학자의 문장(“…”)
+  if(!srcData) srcData=await (await api("/api/sources")).json();
+  const a=srcData.authors.find(x=>x.id===id); if(!a) return [];
+  const out=new Set();
+  a.works.forEach(w=>w.citations.forEach(c=>c.places.forEach(p=>{const m=p.statement.match(/“([^”]{8,140})”?/); if(m) out.add(m[1].trim());})));
+  return [...out];
+}
+async function openUnit(key){
+  curKey=key; renderSecs(); $("#cpanel").hidden=true;
+  avatarFor(key==="cmp"?null:+key.slice(1,3));
+  $("#ana").innerHTML=`<div class="empty">불러오는 중…</div>`;
+  const cm=await (await api(`/api/conceptmap/${key}`)).json();
+  if(key==="cmp") return renderCompare(cm);
+  const isSec=key.includes("-s");
+  let ana=null;
+  if(isSec){const r=await api(`/api/analysis/${key}`); if(r.ok) ana=await r.json();}
+  renderUnit(cm,ana,isSec?sections.find(x=>x.key===key):null);
+}
+function renderUnit(cm,ana,sec){
+  const dtN=cm.determination.length;
+  const dtBtn=`<button class="mini ${showDT?"on":""}" id="dtT" ${dtN?"":"disabled"} title="${dtN?"LLM 분석으로 찾은 결정 관계를 겹쳐 봅니다":"이 범위는 아직 논증 분석 전이라 결정 관계가 없습니다"}">결정 관계${dtN?` ${dtN}`:""}</button>`;
+  $("#ana").innerHTML=`
+  <div class="ahead"><h2>${esc(cm.title)}</h2><span class="meta">${cm.week}주 · 수업 핵심어 ${cm.nodes.length}개
+   ${sec?` · ${esc(sec.source)} 슬라이드 ${sec.slides[0]}–${sec.slides.at(-1)}`:` · 논증 분석된 절 ${cm.analysed_sections.length}/${cm.sections_total}`}</span></div>
+  <div class="grid2">
+    <div class="card"><h3>개념 지도 — 수업 중 등장한 개념 ${dtBtn}</h3>
+      <div id="graph"></div>
+      <div class="legend"><span>색 = 함께 다뤄진 개념 묶음</span><span>크기 = 중요도(연결 중심성 + 등장 슬라이드 수)</span>
+        <span>굵은 테두리 = 이 범위에서 핵심어로 강조</span><span>점선 = 같은 슬라이드에 함께 등장</span><span><b>개념을 누르면 그 슬라이드를 봅니다</b></span><span id="dtLegend"></span></div>
+    </div>
+    <div class="card">${ana?argsCard(ana):sec?noAnalysisCard(sec):weekCard(cm)}</div>
+  </div>
+  ${ana?hypCard(ana):""}
+  ${ana?`<details class="card" style="margin-top:14px"><summary>이 절의 슬라이드 원문</summary><pre class="ex">${esc(ana.text)}</pre></details>`:""}
+  ${ana?`<p class="src">논증 분석: ${esc(ana.model)} · ${esc(ana.created)} — 자동 분석이므로 수업 내용과 어긋나는 곳이 있을 수 있습니다.</p>`:""}`;
+  $("#dtT").onclick=()=>{showDT=!showDT;$("#dtT").classList.toggle("on",showDT);drawGraph(cm);};
+  $("#runAna")?.addEventListener("click",()=>runAnalysis(sec.key));
+  $("#rerun")?.addEventListener("click",()=>{if(confirm("이 절을 다시 분석할까요? (LLM 비용이 듭니다)")) runAnalysis(sec.key,true);});
+  $("#ana").querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openUnit(b.dataset.open));
+  if(ana) wireArgs();
+  drawGraph(cm);
+}
+async function runAnalysis(key,force=false){
+  $("#ana").innerHTML=`<div class="empty">논증 분석 중… (절 하나에 1~3분 걸립니다)</div>`;
+  const r=await api(`/api/analysis/${key}${force?"?force=true":""}`,{method:"POST"});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok){$("#ana").innerHTML=`<div class="empty"><div class="notice">${esc(d.detail||r.status)}</div></div>`;return;}
+  const s=sections.find(x=>x.key===key); if(s) s.cached=true; openUnit(key);
+}
+function weekCard(cm){
+  const secs=sections.filter(s=>s.week===cm.week);
+  return `<h3>이 주의 절</h3>${secs.map(s=>`<div class="row"><button class="mini" data-open="${s.key}">열기</button> ${esc(s.title)} <small class="src">${s.cached?"● 논증 분석 있음":""}</small></div>`).join("")}
+  <p class="src">절을 열면 개념 지도와 함께 전제·결론·숨은 전제, 논증 도식과 비판적 질문을 볼 수 있습니다.</p>`;
+}
+function noAnalysisCard(sec){
+  return `<h3>논증</h3><p class="src">이 절은 아직 논증 분석 전입니다. 개념 지도는 수업 슬라이드에서 바로 만든 것이라 분석 없이도 보입니다.</p>
+  ${canAnalyze?`<button class="btn" style="padding:8px 16px" id="runAna">논증 분석하기</button>`:"<p class='src'>교수자가 분석을 준비하면 볼 수 있습니다.</p>"}`;
+}
+function argsCard(r){
+  const cm=r.concept_map;
+  return `<h3>논증 <span class="toggles" id="argT"><button data-a="pre" class="on">PRE</button><button data-a="con" class="on">CON</button><button data-a="hid" class="on">HIDDEN</button><button data-a="anls" class="on">ANLS</button></span></h3>
+  <div id="args">${cm.arguments.map(a=>argHtml(a)).join("")||'<p class="src">추출된 논증이 없습니다.</p>'}</div>
+  ${canAnalyze?`<button class="mini" id="rerun">다시 분석</button>`:""}`;
+}
+function hypCard(r){
+  const hs=r.concept_map.hypotheses;
+  return `<div class="card" style="margin-top:14px"><h3>가추 가설 — 텍스트가 말하지 않은 것 <small class="src" style="margin:0">모두 검토할 가설입니다</small></h3>
+  ${hs.map(h=>`<div class="hyp">${esc(h.statement)} <small>· ${HYP[h.hypothesis_type]||h.hypothesis_type} · 신뢰도 ${(h.confidence*100|0)}%</small></div>`).join("")||'<p class="src">가설이 없습니다.</p>'}</div>`;
+}
+function wireArgs(){
+  $("#argT").onclick=e=>{const a=e.target.dataset.a;if(!a)return;e.target.classList.toggle("on");
+    document.querySelectorAll(`#args [data-part="${a}"]`).forEach(x=>x.hidden=!e.target.classList.contains("on"));};
+  document.querySelectorAll("#args .cq button").forEach(b=>b.onclick=()=>askFromAnalysis(b.dataset.q));
+}
+function argHtml(a){
+  const pe=a.peirce, sc=a.scheme;
+  const bars=pe?[["타당성",pe.plausibility],["그럴듯함",pe.credibility],["일관성",pe.consistency],["검약성",pe.parsimony],["종합",pe.overall_confidence]]
+    .map(([k,v])=>`<span>${k}</span><span class="bar"><b style="width:${(v*100)|0}%"></b></span><span>${(v*10).toFixed(1)}</span>`).join(""):"";
+  return `<div class="arg"><h4>${esc(a.id)} · ${esc(a.title)} <small class="src">${FORM[a.inference_form]||esc(a.inference_form)}</small></h4>
+   <div data-part="pre">${a.premises.map((p,i)=>`<div class="row"><span class="tag pre">P${i+1}</span>${esc(p)}</div>`).join("")}</div>
+   <div data-part="hid">${a.hidden_premises.map(p=>`<div class="row hid"><span class="tag hid">숨은 전제</span>${esc(p)}</div>`).join("")}</div>
+   <div data-part="con"><div class="row"><span class="tag con">∴</span><b>${esc(a.conclusion)}</b></div></div>
+   <div data-part="anls" class="anls">${sc?`<div><b>도식</b> ${esc(sc.scheme_name)} <small class="src">(${(sc.confidence*100|0)}%)</small></div>
+     ${sc.critical_questions.map(q=>`<div class="cq ${q.status}">${esc(q.text)}${q.status==="weakness"?`<button data-q="${esc(`[${a.title}] 이 논증의 약점 — ${q.text}`)}">아바타에게 묻기</button>`:""}</div>`).join("")}`:'<span class="src">도식 분석 없음</span>'}
+     ${pe?`<div class="bars">${bars}</div><div class="src">${esc(pe.rationale)}</div>`:""}</div></div>`;
+}
+// 개념 묶음 색(동시 등장 커뮤니티) — 밝은·어두운 화면 모두에서 구별되는 8색
+const GROUP_COLORS=["#2f6fdf","#e0712c","#2a9d6f","#c2417a","#8a5cd1","#b8912a","#1f9bb3","#6b7a3a"];
+const SIDE={descartes:"#2f6fdf",spinoza:"#e0712c",both:"#8a5cd1"};
+const SLIDES_BASE=window.PHILO_SLIDES||"/slides/";
+const nodeSize=s=>7+30*Math.pow(s||0,1.2);           // 중요도 → 반지름(7~37)
+const fontSize=s=>12+9*(s||0);
+function graphFont(ink,s,bold){return {color:ink,size:fontSize(s),face:"Pretendard, Malgun Gothic, sans-serif",bold:bold?{color:ink}:undefined,
+  strokeWidth:4,strokeColor:getComputedStyle(document.documentElement).getPropertyValue("--graph-bg").trim()||"#fff"};}
+function drawGraph(cm){
+  const el=$("#graph"); if(!window.vis){el.innerHTML='<p class="src" style="padding:12px">그래프 라이브러리를 불러오지 못했습니다.</p>';return;}
+  const ink=getComputedStyle(document.body).color;
+  const nodes=cm.nodes.map(n=>{const c=GROUP_COLORS[n.group%GROUP_COLORS.length];
+    return {id:n.id,label:n.id,shape:"dot",size:nodeSize(n.score),borderWidth:n.emphasized?3:1,
+      color:{background:c,border:n.emphasized?ink:c,highlight:{background:c,border:ink},hover:{background:c,border:ink}},
+      opacity:n.emphasized?1:.8,font:graphFont(ink,n.score,n.score>.6),title:`${n.id} · 슬라이드 ${n.slides.length}장 · 눌러서 슬라이드 보기`};});
+  const maxW=Math.max(...cm.edges.map(e=>e.weight),1);
+  const gOf=Object.fromEntries(cm.nodes.map(n=>[n.id,n.group]));
+  const edges=cm.edges.map(e=>({from:e.source,to:e.target,dashes:[3,4],width:.8+3*(e.weight/maxW),
+    color:{color:gOf[e.source]===gOf[e.target]?GROUP_COLORS[gOf[e.source]%GROUP_COLORS.length]:"#a9b0b8",opacity:.45},
+    title:`S1 근접 · 함께 등장한 슬라이드 ${e.weight}장`}));
+  let used=[];
+  if(showDT){
+    const have=new Set(cm.nodes.map(n=>n.id));
+    cm.determination.forEach(d=>[d.source,d.target].forEach(id=>{if(!have.has(id)){have.add(id);
+      nodes.push({id,label:id,shape:"dot",size:8,color:{background:"#d9d9d9",border:"#b0b0b0"},font:{color:ink,size:12},title:"LLM 분석에서 나온 개념(수업 핵심어 아님)"});}}));
+    cm.determination.forEach(d=>{const v=REL[d.relation_type]||REL.other; used.push(d.relation_type);
+      edges.push({from:d.source,to:d.target,label:v[3].split(" ")[0],title:`${v[3]} · ${d.basis}`,color:{color:v[1]},
+        width:1.5+2*(d.strength||0.5),font:{size:10,color:v[1],strokeWidth:0},
+        arrows:d.direction==="unidirectional"?"to":d.direction==="bidirectional"?"to, from":""});});
+  }
+  $("#dtLegend").innerHTML=[...new Set(used)].map(t=>{const v=REL[t]||REL.other;return `<i style="border-color:${v[1]}"></i>${v[3]} `;}).join("");
+  mountNetwork(el,nodes,edges,{gravitationalConstant:-110,centralGravity:.015,springLength:130,springConstant:.04,avoidOverlap:.8});
+  network.on("click",p=>{const id=p.nodes[0]; if(!id) return; const n=cm.nodes.find(x=>x.id===id);
+    n?openConcept({id,slides:{[phOfWeek(cm.week)]:n.slides},color:GROUP_COLORS[n.group%GROUP_COLORS.length]})
+     :openConcept({id,slides:{},note:"LLM 분석에서 나온 개념(수업 핵심어 아님)"});});
+}
+function mountNetwork(el,nodes,edges,fa){
+  network?.destroy();
+  network=new vis.Network(el,{nodes,edges},{physics:{solver:"forceAtlas2Based",forceAtlas2Based:fa,stabilization:{iterations:350}},
+    interaction:{hover:true,tooltipDelay:150},edges:{smooth:false}});
+  network.once("stabilizationIterationsDone",()=>network.fit({animation:false}));
+}
+const phOfWeek=w=>course.weeks.find(x=>x.week===w)?.philosophers.find(p=>course.philosophers.find(x=>x.id===p)?.persona);
+
+// ---------- 데카르트 ↔ 스피노자 비교 ----------
+function renderCompare(cm){
+  const [a,b]=cm.pair, na=phName(a), nb=phName(b);
+  $("#ana").innerHTML=`
+  <div class="ahead"><h2>${esc(na)} ↔ ${esc(nb)}</h2><span class="meta">공통 개념 ${cm.nodes.filter(n=>n.side==="both").length} · ${esc(na)}만 ${cm.nodes.filter(n=>n.side===a).length} · ${esc(nb)}만 ${cm.nodes.filter(n=>n.side===b).length} · 입장 비교 ${cm.comparisons.length}</span></div>
+  <div class="grid2">
+    <div class="card"><h3>비교 지도 — 같은 개념, 다른 설명</h3>
+      <div class="cmp-heads"><span style="color:${SIDE[a]}">◀ ${esc(na)}만</span><span style="color:${SIDE.both}">공통</span><span style="color:${SIDE[b]}">${esc(nb)}만 ▶</span></div>
+      <div id="graph" class="tall"></div>
+      <div class="legend"><span><b style="color:${SIDE[a]}">●</b> ${esc(na)} 슬라이드에만</span><span><b style="color:${SIDE.both}">●</b> 두 철학자 모두</span><span><b style="color:${SIDE[b]}">●</b> ${esc(nb)} 슬라이드에만</span>
+        <span><b>⚖</b> 두 사람의 설명이 갈리는 개념 — 눌러서 비교</span><span>선 색 = 어느 철학자 슬라이드에서 함께 나왔는가</span></div>
+    </div>
+    <div class="card"><h3>설명이 갈리는 개념 ${cm.comparisons.length}</h3>
+      ${cm.comparisons.map(c=>`<button class="cmp-item" data-id="${esc(c.id)}"><b>⚖ ${esc(c.id)}</b><small>${esc(c.theme)}</small><span>${esc(c.point)}</span></button>`).join("")}
+      <p class="src">수업 슬라이드(특히 3주 슬라이드 5 「형이상학의 여섯 주제로 본 스피노자」)에 근거해 정리한 것입니다.</p>
+    </div>
+  </div>`;
+  $("#ana").querySelectorAll(".cmp-item").forEach(x=>x.onclick=()=>openCompareConcept(cm,x.dataset.id));
+  drawCompare(cm);
+}
+function drawCompare(cm){
+  const el=$("#graph"); if(!window.vis) return;
+  const ink=getComputedStyle(document.body).color, [a,b]=cm.pair;
+  const X={[a]:-330,both:0,[b]:330};
+  const nodes=cm.nodes.map(n=>({id:n.id,label:(n.compared?"⚖ ":"")+n.id,shape:"dot",size:nodeSize(n.score)*(n.compared?1.15:1),
+    x:X[n.side]+(Math.random()-.5)*60,fixed:{x:false,y:false},
+    color:{background:SIDE[n.side]||SIDE.both,border:n.compared?"#d4a017":SIDE[n.side],highlight:{background:SIDE[n.side],border:ink}},
+    borderWidth:n.compared?4:1,font:graphFont(ink,n.score,n.compared),
+    title:`${n.id} · ${phName(a)} ${n.count[a]}장 / ${phName(b)} ${n.count[b]}장`}));
+  const edges=cm.edges.map(e=>({from:e.source,to:e.target,width:.6+.5*Math.min(e.weight,6),dashes:[3,4],color:{color:SIDE[e.side],opacity:.35}}));
+  network?.destroy();
+  network=new vis.Network(el,{nodes,edges},{physics:{solver:"forceAtlas2Based",
+    forceAtlas2Based:{gravitationalConstant:-80,centralGravity:.004,springLength:140,springConstant:.02,avoidOverlap:.9},stabilization:{iterations:400}},
+    interaction:{hover:true,tooltipDelay:150},edges:{smooth:false}});
+  // 가로 위치는 진영(데카르트만 / 공통 / 스피노자만)에 묶어 둔다
+  network.on("beforeDrawing",()=>{const pos=network.getPositions();cm.nodes.forEach(n=>{const p=pos[n.id];if(!p)return;
+    const target=X[n.side], lim=n.side==="both"?120:150; if(Math.abs(p.x-target)>lim) network.moveNode(n.id,target+Math.sign(p.x-target)*lim,p.y);});});
+  network.once("stabilizationIterationsDone",()=>network.fit({animation:false}));
+  network.on("click",p=>{const id=p.nodes[0]; if(id) openCompareConcept(cm,id);});
+}
+function openCompareConcept(cm,id){
+  const n=cm.nodes.find(x=>x.id===id); const c=cm.comparisons.find(x=>x.id===id);
+  openConcept({id,slides:n?n.slides:{},compare:c,pair:cm.pair,color:SIDE[n?.side]||SIDE.both});
+}
+
+// ---------- 개념 패널: 그 개념이 나온 실제 슬라이드 ----------
+function openConcept({id,slides,compare,pair,note,color}){
+  const p=$("#cpanel"); p.hidden=false;
+  // 비교 개념이면 근거로 든 슬라이드를 맨 앞에
+  if(compare){slides={...slides}; for(const s of Object.keys(slides)){const ref=new Set((compare.refs?.[s]||[]).map(([w,n])=>w+"-"+n));
+    slides[s]=[...slides[s]].sort((x,y)=>ref.has(y.week+"-"+y.n)-ref.has(x.week+"-"+x.n));}}
+  const sides=Object.keys(slides||{}).filter(k=>slides[k]?.length);
+  const total=sides.reduce((s,k)=>s+slides[k].length,0);
+  let h=`<div class="cp-head"><span class="cp-dot" style="background:${color||"#888"}"></span><h3>${compare?"⚖ ":""}${esc(id)}</h3>
+    <button class="mini" id="cpAsk">아바타에게 묻기</button><button class="cp-x" id="cpX" aria-label="닫기">✕</button></div>`;
+  if(note) h+=`<p class="src">${esc(note)}</p>`;
+  if(compare){
+    const [a,b]=pair;
+    h+=`<div class="cp-point">${esc(compare.point)}<small>${esc(compare.theme)}</small></div>
+    <div class="cp-cmp">${[a,b].map(s=>`<div style="border-color:${SIDE[s]}"><b style="color:${SIDE[s]}">${esc(phName(s))}</b><p>${esc(compare[s])}</p>
+      <small>근거: ${(compare.refs?.[s]||[]).map(([w,n])=>`<a href="#" data-img="w${String(w).padStart(2,"0")}/s${String(n).padStart(2,"0")}.jpg">${w}주 슬라이드 ${n}</a>`).join(" · ")}</small></div>`).join("")}</div>`;
+  }
+  h+=`<p class="src">이 개념이 나온 수업 슬라이드 ${total}장${total>12?" (앞 12장)":""} — 누르면 크게 봅니다.</p>`;
+  for(const s of sides){
+    if(sides.length>1||compare) h+=`<div class="label" style="color:${SIDE[s]||"inherit"}">${esc(phName(s)||s)}</div>`;
+    h+=`<div class="cp-slides">${slides[s].slice(0,12).map(r=>r.img?`<figure data-img="${r.img}"><img loading="lazy" src="${SLIDES_BASE}${r.img}" alt="${esc(r.title)}"><figcaption>${r.week}주 · 슬라이드 ${r.n} · ${esc(r.title)}</figcaption></figure>`
+      :`<figure><figcaption>${r.week}주 · 슬라이드 ${r.n} · ${esc(r.title)}</figcaption></figure>`).join("")}</div>`;
+  }
+  p.innerHTML=h;
+  $("#cpX").onclick=()=>{p.hidden=true;};
+  $("#cpAsk").onclick=()=>{const q=compare?`'${id}'에 대한 데카르트와 스피노자의 설명은 어떻게 다른가요?`:`'${id}'은(는) 무슨 뜻인가요?`; avatar?avatar.prefill(q):askFromAnalysis(q);};
+  p.querySelectorAll("[data-img]").forEach(x=>x.onclick=e=>{e.preventDefault();lightbox(x.dataset.img);});
+  p.scrollTop=0;
+}
+window.lightbox=lightbox;
+function lightbox(img){
+  const d=document.createElement("div"); d.className="lightbox";
+  d.innerHTML=`<img src="${SLIDES_BASE}${img}" alt=""><button aria-label="닫기">✕</button>`;
+  d.onclick=()=>d.remove(); document.addEventListener("keydown",function k(e){if(e.key==="Escape"){d.remove();document.removeEventListener("keydown",k);}});
+  document.body.append(d);
+}
+
+// ---------- 원전 목록 ----------
+let srcData=null, srcQ="";
+async function loadSources(){ if(!srcData) srcData=await (await api("/api/sources")).json(); renderSources(); }
+function renderSources(){
+  if(!srcData) return;
+  const weeks=ph?course.philosophers.find(p=>p.id===ph)?.weeks||[]:null;
+  const inW=x=>!weeks||weeks.includes(x.week);
+  const hit=t=>!srcQ||String(t).toLowerCase().includes(srcQ);
+  let html=`<div class="srcfilter"><input id="srcq" placeholder="찾기 — 예: E1D3, 코나투스, 성찰" value="${esc(srcQ)}"></div>
+  <p class="src" style="margin-top:0">수업 슬라이드에 등장한 학자와 저작입니다. 인용 위치는 슬라이드에서 자동으로 모았고, 각 줄 끝이 등장한 주차·슬라이드입니다.</p>`;
+  for(const a of srcData.authors){
+    const works=a.works.map(w=>({...w,citations:w.citations.map(c=>({...c,places:c.places.filter(p=>inW(p)&&(hit(c.locator)||hit(p.statement)||hit(w.title)))})).filter(c=>c.places.length),
+      mentions:w.mentions.filter(m=>inW(m)&&(hit(m.line)||hit(w.title)||hit(w.title_orig)))})).filter(w=>w.citations.length||w.mentions.length);
+    if(!works.length) continue;
+    html+=`<div class="card author"><h2>${esc(a.name)} <small class="src">${esc(a.name_orig)}${a.life?` (${esc(a.life)})`:""}</small></h2><div class="meta">${esc(a.role)}</div>`;
+    for(const w of works){
+      html+=`<div class="work"><h3>『${esc(w.title)}』 <span class="orig">${esc(w.title_orig)}</span> <small class="src">${esc(w.year)}${w.translation?` · ${esc(w.translation)}`:""}</small></h3>`;
+      if(w.citations.length) html+=`<table class="cite">${w.citations.map(c=>c.places.map((p,i)=>`<tr><td>${i?"":esc(c.locator)}</td><td>${esc(p.statement)}</td><td>${p.week}주 · ${p.slide}</td></tr>`).join("")).join("")}</table>`;
+      if(w.mentions.length) html+=`<details class="src"><summary>언급된 슬라이드 ${w.mentions.length}곳</summary><table class="cite">${w.mentions.map(m=>`<tr><td></td><td>${esc(m.line)}</td><td>${m.week}주 · ${m.slide}</td></tr>`).join("")}</table></details>`;
+      html+=`</div>`;
+    }
+    html+=`</div>`;
+  }
+  $("#srcs").innerHTML=html;
+  const inp=$("#srcq"); inp.oninput=()=>{srcQ=inp.value.trim().toLowerCase(); const pos=inp.selectionStart; renderSources(); const n=$("#srcq"); n.focus(); n.setSelectionRange(pos,pos);};
+}
+
+// ---------- 시작 ----------
+api("/api/course").then(r=>r.json()).then(c=>{
+  course=c; ph=c.philosophers.find(p=>p.persona)?.id||null; $("#ctitle").textContent=c.title; document.title=`${c.title} · 학습 도우미`; $("#csub").textContent=`${c.semester} · 학습 도우미 · 이번 학기 슬라이드 기반`;
+  $("#llm").textContent=STATIC?"":c.llm?"":"⚠ LLM 미연결 — 자료 검색과 저장된 분석만 동작";
+  renderPhs(); welcome(); setTimeout(refreshCounts,1500); hit(location.hash.slice(1).split("/")[0]||"ana",true);
+  if(STATIC){ $("#tabs").querySelector('[data-t="chat"]').remove(); if(!location.hash) location.hash="ana"; }
+  const [t,k]=location.hash.slice(1).split("/"); if(["ana","src"].includes(t)){ if(k) curKey=k; $("#tabs").querySelector(`[data-t="${t}"]`).click(); if(k) openUnit(k); }
+});
+</script>
+</body>
+</html>
