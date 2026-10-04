@@ -14,8 +14,9 @@
     return v;
   })();
 
-  var box, state = null, joined = false, picked = -1, lastIdx = -1, timer = null;
-  var order = [], myText = "", lastPhase = "", sound = true;
+  var box, state = null, joined = false, picked = -1, lastIdx = -1, timer = null, joinedQid = "";
+  var order = [], myText = "", myNick = "", lastPhase = "", sound = true;
+  try { myNick = localStorage.getItem("quiz-nick") || ""; } catch (e) {}
   try { sound = localStorage.getItem("quiz-sound") !== "0"; } catch (e) {}
 
   // 효과음 — 파일 없이 만든다. 학생이 화면을 한 번 누른 뒤부터 울린다.
@@ -38,7 +39,7 @@
   }
   var FACE = { ok: ["\ud83c\udf89", "\ud83e\udd73", "\u2728", "\ud83d\udc4f"], bad: ["\ud83d\udca7", "\ud83d\ude3f"] };
   function face(k) { var a = FACE[k] || FACE.ok; return a[Math.floor(Math.random() * a.length)]; }
-  try { joined = localStorage.getItem("quiz-joined") === "1"; } catch (e) {}
+  try { joinedQid = localStorage.getItem("quiz-joined") || ""; } catch (e) {}
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
@@ -94,7 +95,14 @@
       ".qzoi.on{border-color:var(--accent,#3d5a80)}.qzoi.on .n{background:var(--accent,#3d5a80);color:#fff}",
       ".qzord.show .qzoi{cursor:default}.qzoi.done .n{background:#00a99d;color:#fff}",
       ".qzjoin button.ghost{background:transparent;color:var(--muted,#646b73);border:1px solid var(--line,#e3e0da)}",
-      ".qzmute{border:0;background:transparent;font-size:16px;cursor:pointer;padding:0 4px}"
+      ".qzmute{border:0;background:transparent;font-size:16px;cursor:pointer;padding:0 4px}",
+      ".qzwait{margin-top:14px;text-align:center;font-size:15px}",
+      ".qzwait .dots{display:flex;gap:7px;justify-content:center;margin-bottom:10px}",
+      ".qzwait .dots i{width:9px;height:9px;border-radius:50%;background:var(--accent,#3d5a80);",
+      "  animation:qzb 1.1s infinite ease-in-out}",
+      ".qzwait .dots i:nth-child(2){animation-delay:.16s}.qzwait .dots i:nth-child(3){animation-delay:.32s}",
+      "@keyframes qzb{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-5px)}}",
+      "@media(prefers-reduced-motion:reduce){.qzwait .dots i{animation:none;opacity:.7}}"
     ].join("\n");
     document.head.appendChild(s);
   }
@@ -137,8 +145,25 @@
 
   function draw() {
     var s = state;
-    if (!s || s.phase === "none" || s.phase === "idle") { box.hidden = true; return; }
+    if (!s || s.phase === "none") { box.hidden = true; return; }
     box.hidden = false;
+
+    // 대기실 — 퀴즈가 올라와 있고 아직 시작 전
+    if (s.phase === "idle") {
+      var h0 = '<div class="qz"><span class="tag">오늘의 퀴즈</span>' +
+        '<span class="ttl">' + esc(s.title || "") + '</span>' +
+        '<span class="meta">' + (s.players || 0) + '명 들어왔습니다</span></div>';
+      if (!joined) {
+        box.innerHTML = h0 + joinForm();
+        bindJoin();
+      } else {
+        box.innerHTML = h0 +
+          '<div class="qzwait"><div class="dots"><i></i><i></i><i></i></div>' +
+          '<div><b>' + esc(myNick || "") + '</b> 님, 들어왔습니다</div>' +
+          '<div class="qzmsg">교수님이 시작하면 첫 문제가 바로 나옵니다. 화면을 두고 기다려 주십시오.</div></div>';
+      }
+      return;
+    }
 
     var head = '<div class="qz"><span class="tag">오늘의 퀴즈</span>' +
       '<span class="ttl">' + esc(s.title || "") + '</span>' +
@@ -251,8 +276,10 @@
       post({ act: "join", sid: sid, nick: nick, pin: pin }).then(function (r) {
         go.disabled = false;
         if (r && r.ok) {
-          joined = true;
-          try { localStorage.setItem("quiz-joined", "1"); } catch (e) {}
+          joined = true; myNick = r.nick || nick;
+          try { localStorage.setItem("quiz-nick", myNick); } catch (e) {}
+          joinedQid = (state && state.qid) || "";
+          try { localStorage.setItem("quiz-joined", joinedQid); } catch (e) {}
           draw();
         } else if (msg) msg.textContent = (r && r.detail) || "참여하지 못했습니다.";
       });
@@ -263,6 +290,7 @@
     fetch(API + "/api/quiz?vid=" + encodeURIComponent(vid), { cache: "no-store" })
       .then(function (r) { return r.json(); })
       .then(function (s) {
+        if (s && s.qid) joined = (joinedQid === s.qid);
         if (s && s.idx !== undefined && s.idx !== lastIdx) {
           picked = -1; lastIdx = s.idx; order = []; myText = "";
         }
