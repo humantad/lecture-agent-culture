@@ -187,7 +187,16 @@ function draw(s) {
     : (s.title || "") + " · " + (s.phase === "idle" ? "대기 중" :
        s.phase === "done" ? "끝남" : (s.idx + 1) + "/" + s.n + " 문제");
 
-  if (s.phase === "none") { m.innerHTML = '<div class="msg">퀴즈를 먼저 올려 주십시오. <br>quiz_run.ps1 -Set</div>'; return; }
+  if (s.phase === "none") {
+    m.innerHTML = keyOK
+      ? '<div class="big">올린 퀴즈가 없습니다</div>' +
+        '<button class="go" id="load2" style="font-size:18px;padding:14px 32px">퀴즈 올리기</button>' +
+        '<div class="msg">다섯 유형이 들어간 보기 퀴즈가 채워져 나옵니다. 고쳐서 올리십시오.</div>'
+      : '<div class="msg">관리 코드를 먼저 넣어 주십시오.</div>';
+    var l2 = document.getElementById("load2");
+    if (l2) l2.onclick = function () { $("#load").click(); };
+    return;
+  }
 
   if (s.phase === "idle") {
     m.innerHTML = '<div class="pill">학생은 아래 주소나 QR로 들어옵니다</div>' +
