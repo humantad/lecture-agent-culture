@@ -42,8 +42,14 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
   border-radius:7px;background:rgba(0,0,0,.22);display:flex;align-items:center;justify-content:center;font-size:13px}
 .opt.o0{background:var(--c0)}.opt.o1{background:var(--c1)}.opt.o2{background:var(--c2)}.opt.o3{background:var(--c3)}
 .opt.right{outline:4px solid #fff}
-.opt.dim{opacity:.38;filter:saturate(.5)}
-.opt.dim .cnt,.opt.dim .n{opacity:.9}
+.opt.dim{opacity:.3;filter:grayscale(.85) brightness(.8)}
+.opt.dim .cnt{opacity:1;font-weight:800}
+.opt.right{box-shadow:0 0 0 4px #fff,0 0 26px rgba(255,255,255,.35)}
+.grid.two{grid-template-columns:1fr 1fr}
+.grid.two .opt{min-height:120px;font-size:30px;font-weight:800;justify-content:center;padding-left:16px}
+.plain{font-size:clamp(18px,2.4vw,26px);color:var(--ink);max-width:22ch;line-height:1.5}
+.plain.big2{font-size:clamp(24px,3.2vw,38px);font-weight:800}
+.hint{font-weight:800;letter-spacing:.22em;color:var(--accent)}
 .opt .cnt{position:absolute;right:14px;bottom:10px;font-size:14px;font-weight:800}
 .opt .fill{position:absolute;left:0;bottom:0;height:5px;background:rgba(255,255,255,.85);border-radius:0 3px 3px 0;transition:width .4s}
 .tim{font-size:46px;font-weight:800;font-variant-numeric:tabular-nums}
@@ -197,6 +203,29 @@ function send(act) {
     .catch(function () {});
 }
 
+// 보기를 그린다 — 선택형·OX 는 네 칸, 단답·초성은 정답 글자, 순서는 차례
+// right 가 -1 이면 아직 정답을 밝히지 않는 단계다.
+function optsHtml(q, d, tot, right) {
+  var t = q.t || "choice";
+  if (t === "short" || t === "initial") {
+    if (right < 0) return '<div class="plain">학생이 답을 적고 있습니다</div>';
+    return '<div class="plain big2">정답 · ' + esc((q.ans || []).join(" / ")) + '</div>';
+  }
+  if (t === "order") {
+    if (right < 0) return '<div class="plain">' + (q.a || []).map(esc).join(" · ") + '</div>';
+    return '<div class="rank">' + (q.c || []).map(function (ci, n) {
+      return '<div class="row"><span class="r">' + (n + 1) + '</span><span>' + esc(q.a[ci]) + '</span></div>';
+    }).join("") + '</div>';
+  }
+  var opts = (t === "ox") ? ["O", "X"] : (q.a || []);
+  return '<div class="grid' + (t === "ox" ? " two" : "") + '">' + opts.map(function (a, i) {
+    var cls = "opt o" + i + (right < 0 ? "" : (i === right ? " right" : " dim"));
+    return '<div class="' + cls + '"><span class="n">' + (i + 1) + '</span>' + esc(a) +
+      '<span class="cnt">' + (d[i] || 0) + (right < 0 ? '' : '명') + '</span>' +
+      '<span class="fill" style="width:' + (100 * (d[i] || 0) / tot).toFixed(1) + '%"></span></div>';
+  }).join("") + '</div>';
+}
+
 function qrInto(box, pin) {
   box.innerHTML = "";
   // QR 로 들어온 사람은 PIN 을 치지 않는다 — 주소에 실어 보낸다
@@ -250,12 +279,9 @@ function draw(s) {
     var tot = Math.max(1, s.answered || 0);
     m.innerHTML = '<div class="tim">' + s.left + '</div>' +
       '<div class="prog"><i style="width:' + (100 * s.left / s.secs).toFixed(1) + '%"></i></div>' +
-      '<div class="q">' + esc(s.q.q) + "</div>" +
-      '<div class="grid">' + s.q.a.map(function (a, i) {
-        return '<div class="opt o' + i + '"><span class="n">' + (i + 1) + "</span>" + esc(a) +
-          '<span class="cnt">' + (d[i] || 0) + "</span>" +
-          '<span class="fill" style="width:' + (100 * (d[i] || 0) / tot).toFixed(1) + '%"></span></div>';
-      }).join("") + "</div>" +
+      '<div class="q">' + esc(s.q.q) +
+      ((s.q.t === "initial" && s.q.hint) ? ' <span class="hint">' + esc(s.q.hint) + '</span>' : '') +
+      "</div>" + optsHtml(s.q, d, tot, -1) +
       '<div class="pill">' + (s.answered || 0) + " / " + (s.players || 0) + "명 답했습니다</div>";
     return;
   }
@@ -287,12 +313,9 @@ function draw(s) {
   // 정답·통계 — 순위는 넣지 않는다
   var d2 = (s.dist && s.dist.d) || [0, 0, 0, 0];
   var tot2 = Math.max(1, d2.reduce(function (a, b) { return a + b; }, 0));
-  m.innerHTML = '<div class="q">' + esc(s.q.q) + '</div>' +
-    '<div class="grid">' + s.q.a.map(function (a, i) {
-      return '<div class="opt o' + i + (i === s.q.c ? " right" : " dim") + '"><span class="n">' +
-        (i + 1) + '</span>' + esc(a) + '<span class="cnt">' + (d2[i] || 0) + '명</span>' +
-        '<span class="fill" style="width:' + (100 * (d2[i] || 0) / tot2).toFixed(1) + '%"></span></div>';
-    }).join("") + '</div>' +
+  m.innerHTML = '<div class="q">' + esc(s.q.q) +
+    ((s.q.t === "initial" && s.q.hint) ? ' <span class="hint">' + esc(s.q.hint) + '</span>' : '') +
+    '</div>' + optsHtml(s.q, d2, tot2, (s.q.c === undefined ? -1 : s.q.c)) +
     '<div class="pill">' + (s.players || 0) + '명 참여 · 아래 단추로 넘기십시오</div>';
 }
 
