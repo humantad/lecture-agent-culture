@@ -43,6 +43,41 @@
   function face(k) { var a = FACE[k] || FACE.ok; return a[Math.floor(Math.random() * a.length)]; }
   try { joinedQid = localStorage.getItem("quiz-joined") || ""; } catch (e) {}
 
+
+  // 끝 화면 그림 — 파일을 받지 않고 그려 쓴다(느리거나 막히는 일이 없게)
+  function artWin() {
+    return '<svg viewBox="0 0 240 150" role="img" aria-label="축하 트로피와 색종이">' +
+      '<g fill="none" stroke-width="3" stroke-linecap="round">' +
+      '<path d="M96 36h48v22a24 24 0 0 1-48 0z" fill="#f6c343" stroke="#c99300"/>' +
+      '<path d="M96 42H84a14 14 0 0 0 14 14" stroke="#c99300"/>' +
+      '<path d="M144 42h12a14 14 0 0 1-14 14" stroke="#c99300"/>' +
+      '<path d="M120 80v14" stroke="#c99300"/>' +
+      '<path d="M104 108h32l-4-14h-24z" fill="#f6c343" stroke="#c99300"/>' +
+      '<path d="M98 118h44" stroke="#c99300"/>' +
+      '</g>' +
+      '<g stroke-width="3" stroke-linecap="round">' +
+      '<path d="M44 40l8 10M58 28l4 12M34 62l12 2" stroke="#ff8a3d"/>' +
+      '<path d="M196 40l-8 10M182 28l-4 12M206 62l-12 2" stroke="#2f80ed"/>' +
+      '</g>' +
+      '<g>' +
+      '<rect x="40" y="86" width="9" height="9" rx="2" fill="#e4596a" transform="rotate(20 44 90)"/>' +
+      '<rect x="64" y="104" width="8" height="8" rx="2" fill="#00a99d" transform="rotate(-15 68 108)"/>' +
+      '<rect x="176" y="92" width="9" height="9" rx="2" fill="#2f80ed" transform="rotate(30 180 96)"/>' +
+      '<rect x="198" y="110" width="8" height="8" rx="2" fill="#f0a44a" transform="rotate(-20 202 114)"/>' +
+      '</g></svg>';
+  }
+
+  function artSoft() {
+    return '<svg viewBox="0 0 240 150" role="img" aria-label="떠오르는 해와 길">' +
+      '<circle cx="120" cy="74" r="26" fill="#f6c343" opacity=".9"/>' +
+      '<g stroke="#f0a44a" stroke-width="3" stroke-linecap="round">' +
+      '<path d="M120 32v-10M120 126v10M62 74H52M188 74h10M79 33l-7-7M161 33l7-7"/>' +
+      '</g>' +
+      '<path d="M20 112c30-8 58 6 86 2s52-16 114-6" fill="none" stroke="#00a99d" stroke-width="3" stroke-linecap="round"/>' +
+      '<path d="M20 126c40-6 70 6 100 2s64-12 100-4" fill="none" stroke="#2f80ed" stroke-width="3" stroke-linecap="round" opacity=".55"/>' +
+      '</svg>';
+  }
+
   function esc(s) {
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
       .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -108,6 +143,13 @@
       "@keyframes qzb{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-5px)}}",
       "@media(prefers-reduced-motion:reduce){.qzwait .dots i{animation:none;opacity:.7}}",
       ".qzres{margin-top:14px;padding:22px 16px;border-radius:12px;text-align:center;color:#fff}",
+      ".qzend{margin-top:14px;padding:20px 16px 24px;border-radius:14px;text-align:center}",
+      ".qzend.win{background:linear-gradient(160deg,#fff3cf,#ffe3a3);color:#4a3600}",
+      ".qzend.soft{background:linear-gradient(160deg,#e7eef7,#dbe6f3);color:#23334a}",
+      ".qzend .art{max-width:260px;margin:0 auto 6px}",
+      ".qzend .art svg{width:100%;height:auto;display:block}",
+      ".qzend .big{font-size:24px;font-weight:800;letter-spacing:-.01em}",
+      ".qzend .sub{font-size:14.5px;margin-top:4px;opacity:.9}",
       ".qzres.ok{background:#00a99d}.qzres.bad{background:#e4596a}.qzres.none{background:#8a93a6}",
       ".qzres .face{font-size:46px;line-height:1}",
       ".qzres .word{font-size:21px;font-weight:700;margin-top:6px}",
@@ -189,6 +231,29 @@
     return true;
   }
 
+  // 끝 화면 — 1~3위는 축하와 학번 칸, 나머지는 격려
+  function endScreen(s) {
+    var win = s.me && s.me.r <= 3;
+    var h = '<div class="qzend ' + (win ? "win" : "soft") + '">' +
+      '<div class="art">' + (win ? artWin() : artSoft()) + '</div>' +
+      (win
+        ? '<div class="big">' + MEDAL[s.me.r - 1] + ' 축하합니다!</div>' +
+          '<div class="sub">' + esc(myNick || "") + ' 님 \u00b7 ' + s.me.r + '등 \u00b7 ' + s.me.s + '점</div>'
+        : '<div class="big">수고하셨습니다</div>' +
+          '<div class="sub">다음엔 더 좋은 결과 있기를 바랍니다' +
+          (s.me ? ' \u00b7 ' + s.me.r + '등 \u00b7 ' + s.me.s + '점' : '') + '</div>') +
+      '</div>';
+    if (win) {
+      h += sidDone
+        ? '<div class="qzwin">학번을 받았습니다. 가산점 처리는 교수님이 하십니다.</div>'
+        : '<div class="qzwin">가산점을 받으려면 학번을 적어 주십시오.' +
+          '<div class="qzjoin"><input id="qzWin" inputmode="numeric" maxlength="10" placeholder="학번" autocomplete="off">' +
+          '<button id="qzWinGo">보내기</button></div>' +
+          '<div class="qzmsg" id="qzWinMsg">학번은 교수님만 봅니다. 순위표에는 나오지 않습니다.</div></div>';
+    }
+    return h;
+  }
+
   function draw() {
     var s = state;
     if (!s || s.phase === "none") { box.hidden = true; return; }
@@ -263,6 +328,8 @@
     } else {
       // 정답이 공개된 뒤 — 학생에게는 본인이 맞았는지만 보인다.
       // 정답·보기별 분포·순위는 교수 화면에만 나간다.
+      if (s.phase === "done") { body += endScreen(s); }
+      else {
       var okk = s.my ? s.my.ok : null;
       body += '<div class="qzres ' + (okk === null ? "none" : (okk ? "ok" : "bad")) + '">' +
         '<div class="face">' + (okk === null ? "·" : (okk ? face("ok") : face("bad"))) + '</div>' +
@@ -280,6 +347,7 @@
             '<div class="qzmsg" id="qzWinMsg">학번은 교수님만 봅니다. 순위표에는 나오지 않습니다.</div></div>';
       } else if (s.phase !== "done") {
         body += '<div class="qzmsg">다음 문제를 기다려 주십시오.</div>';
+      }
       }
     }
     if (!put(head + body)) return;
