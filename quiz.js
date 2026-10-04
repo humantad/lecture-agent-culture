@@ -154,6 +154,33 @@
       (hashPin() ? ' QR\ub85c \ub4e4\uc5b4\uc624\uc154\uc11c PIN\uc740 \ub123\uc9c0 \uc54a\uc73c\uc154\ub3c4 \ub429\ub2c8\ub2e4.' : '') + '</div>';
   }
 
+  var lastHtml = "";
+
+  // 글자를 치는 중에는 화면을 다시 그리지 않는다.
+  // 1초마다 다시 그리면 입력칸이 새로 만들어져 포커스가 풀리고, 휴대폰에서는 키보드가 내려간다.
+  function typing() {
+    var a = document.activeElement;
+    if (!a || !box || !box.contains(a)) return false;
+    return a.tagName === "INPUT" || a.tagName === "TEXTAREA";
+  }
+
+  // 입력 중이라 다시 그리지 못할 때, 남은 초와 막대만 손본다
+  function tickOnly() {
+    var s = state;
+    if (!s || s.phase !== "ask") return;
+    var t = box.querySelector(".sec"), b = box.querySelector(".qzbar i");
+    if (t) t.textContent = s.left;
+    if (b) b.style.width = (100 * s.left / s.secs).toFixed(1) + "%";
+  }
+
+  function put(html) {
+    if (html === lastHtml) return false;          // 바뀐 것이 없으면 그대로 둔다
+    if (typing()) { tickOnly(); return false; }   // 입력 중이면 숫자만 고친다
+    lastHtml = html;
+    box.innerHTML = html;
+    return true;
+  }
+
   function draw() {
     var s = state;
     if (!s || s.phase === "none") { box.hidden = true; return; }
@@ -165,13 +192,12 @@
         '<span class="ttl">' + esc(s.title || "") + '</span>' +
         '<span class="meta">' + (s.players || 0) + '명 들어왔습니다</span></div>';
       if (!joined) {
-        box.innerHTML = h0 + joinForm();
-        bindJoin();
+        if (put(h0 + joinForm())) bindJoin();
       } else {
-        box.innerHTML = h0 +
+        put(h0 +
           '<div class="qzwait"><div class="dots"><i></i><i></i><i></i></div>' +
           '<div><b>' + esc(myNick || "") + '</b> 님, 들어왔습니다</div>' +
-          '<div class="qzmsg">교수님이 시작하면 첫 문제가 바로 나옵니다. 화면을 두고 기다려 주십시오.</div></div>';
+          '<div class="qzmsg">교수님이 시작하면 첫 문제가 바로 나옵니다. 화면을 두고 기다려 주십시오.</div></div>');
       }
       return;
     }
@@ -184,7 +210,7 @@
       '<button class="qzmute" id="qzMute" title="\uc18c\ub9ac">' + (sound ? "\ud83d\udd0a" : "\ud83d\udd07") + '</button>' +
       (s.phase === "ask" ? '<span class="sec">' + s.left + '</span>' : "") + "</div>";
 
-    if (!joined && s.phase !== "done") { box.innerHTML = head + joinForm(); bindJoin(); return; }
+    if (!joined && s.phase !== "done") { if (put(head + joinForm())) bindJoin(); return; }
 
     var body = "";
     if (s.phase === "ask") {
@@ -253,7 +279,7 @@
         }).join('') + '</div>';
       }
     }
-    box.innerHTML = head + body;
+    if (!put(head + body)) return;
     var mu = document.getElementById("qzMute");
     if (mu) mu.onclick = function () {
       sound = !sound;
