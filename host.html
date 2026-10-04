@@ -68,6 +68,18 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
   background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:11px}
 .sheet .row2{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 .sheet h2{font-size:15px;margin:0 0 8px}
+.weeks{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-top:12px}
+.wk{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;
+  padding:13px 15px;border:1px solid var(--line);border-radius:11px;background:var(--bg);
+  color:var(--ink);cursor:pointer;transition:background .12s,border-color .12s,transform .08s}
+.wk:hover{background:var(--panel);border-color:var(--accent);transform:translateY(-1px)}
+.wk:active{transform:none}
+.wk b{font-size:15px}
+.wk span{font-size:12.5px;color:var(--muted);line-height:1.35}
+.wk em{font-style:normal;font-size:11.5px;color:var(--accent);font-weight:700}
+.wk.empty{opacity:.45;cursor:not-allowed}
+.wk.empty:hover{background:var(--bg);border-color:var(--line);transform:none}
+.wk.empty em{color:var(--muted)}
 </style>
 </head>
 <body>
@@ -85,7 +97,7 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 <main id="m"><div class="msg">관리 코드를 넣으면 퀴즈 상태가 보입니다.</div></main>
 <div class="foot" id="foot" hidden>
   <button id="endq">종료</button>
-  <button id="nextq" class="go">다음 문제</button>
+  <button id="nextq" class="go">다음</button>
 </div>
 
 <script>
@@ -97,7 +109,7 @@ var STUDENT = location.origin + location.pathname.replace(/host\.html$/, "");
 var $ = function (s) { return document.querySelector(s); };
 var esc = function (s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); };
 var last = null, qr = null;
-var SAMPLE = {"title": "철사문 · 마르크스주의 Quiz (W04 덱)", "pin": "4204", "secs": 25, "reveal": 7, "qs": [{"t": "choice", "q": "그람시의 '헤게모니(Hegemony)'와 사회 구조에 대한 설명으로 올바르지 않은 것은?", "a": ["헤게모니는 자발적 동의를 이끌어내는 과정이다.", "헤게모니의 주 영역은 강제적인 정치사회다.", "대중문화는 양 계급의 타협적 평형 상태다.", "자본주의 유지는 강제와 동의의 결합이 필수다."], "c": 2}, {"t": "choice", "q": "그람시가 분류한 지식인의 개념에 대한 설명 중 가장 적절한 것은?", "a": ["전통적 지식인은 신흥 계급 이익을 대변한다.", "지식인 기능을 수행하는 이가 유기적 지식인이다.", "유기적 지식인은 과거부터 이어진 독립 집단이다.", "헤게모니 장악을 위해 전통적 지식인을 배제한다."], "c": 1}, {"t": "choice", "q": "알튀세르의 문제설정(Problematic)과 징후적 독해(Symptomatic reading)에 대한 설명으로 가장 적절한 것은?", "a": ["문제설정은 텍스트가 묻고 답할 한계를 규정한다.", "징후적 독해는 텍스트의 표면적 의미만 분석한다.", "문제설정은 열린 체계로 모든 질문에 답할 수 있다.", "징후적 독해는 독자의 주관적 감정을 바탕으로 한다."], "c": 0}, {"t": "choice", "q": "전통적 마르크스주의의 기계적 결정론을 극복하기 위한 그람시와 알튀세르의 이론적 기여에 대한 설명으로 가장 적절한 것은?", "a": ["알튀세르는 경제주의를 전적으로 옹호했다.", "그람시는 상부구조의 자율성을 완전히 부인했다.", "두 학자 모두 상부구조의 자율성을 강조했다.", "알튀세르는 주체의 자유로운 능동성을 중시했다."], "c": 3}, {"t": "choice", "q": "아도르노·호르크하이머의 문화산업론에 대한 설명으로 가장 적절한 것은?", "a": ["대중문화는 대중이 자발적으로 만들어낸 산물이다.", "문화산업은 표준화와 유사 개성화를 통해 체제 순응을 유도한다.", "기술 복제는 예술의 민주화를 가져온다고 주장하였다.", "대중의 능동적 해석 능력을 높이 평가하였다."], "c": 1}]};
+var BANK = [{"w": "W01", "t": "대중문화의 이해", "pin": "0101"}, {"w": "W02", "t": "문화와 문명", "pin": "0202"}, {"w": "W03", "t": "문화주의", "pin": "0303"}, {"w": "W04", "t": "마르크스주의", "pin": "4204", "secs": 25, "qs": [{"t": "choice", "q": "그람시의 '헤게모니(Hegemony)'와 사회 구조에 대한 설명으로 올바르지 않은 것은?", "a": ["헤게모니는 자발적 동의를 이끌어내는 과정이다.", "헤게모니의 주 영역은 강제적인 정치사회다.", "대중문화는 양 계급의 타협적 평형 상태다.", "자본주의 유지는 강제와 동의의 결합이 필수다."], "c": 2}, {"t": "choice", "q": "그람시가 분류한 지식인의 개념에 대한 설명 중 가장 적절한 것은?", "a": ["전통적 지식인은 신흥 계급 이익을 대변한다.", "지식인 기능을 수행하는 이가 유기적 지식인이다.", "유기적 지식인은 과거부터 이어진 독립 집단이다.", "헤게모니 장악을 위해 전통적 지식인을 배제한다."], "c": 1}, {"t": "choice", "q": "알튀세르의 문제설정(Problematic)과 징후적 독해(Symptomatic reading)에 대한 설명으로 가장 적절한 것은?", "a": ["문제설정은 텍스트가 묻고 답할 한계를 규정한다.", "징후적 독해는 텍스트의 표면적 의미만 분석한다.", "문제설정은 열린 체계로 모든 질문에 답할 수 있다.", "징후적 독해는 독자의 주관적 감정을 바탕으로 한다."], "c": 0}, {"t": "choice", "q": "전통적 마르크스주의의 기계적 결정론을 극복하기 위한 그람시와 알튀세르의 이론적 기여에 대한 설명으로 가장 적절한 것은?", "a": ["알튀세르는 경제주의를 전적으로 옹호했다.", "그람시는 상부구조의 자율성을 완전히 부인했다.", "두 학자 모두 상부구조의 자율성을 강조했다.", "알튀세르는 주체의 자유로운 능동성을 중시했다."], "c": 3}, {"t": "choice", "q": "아도르노·호르크하이머의 문화산업론에 대한 설명으로 가장 적절한 것은?", "a": ["대중문화는 대중이 자발적으로 만들어낸 산물이다.", "문화산업은 표준화와 유사 개성화를 통해 체제 순응을 유도한다.", "기술 복제는 예술의 민주화를 가져온다고 주장하였다.", "대중의 능동적 해석 능력을 높이 평가하였다."], "c": 1}]}, {"w": "W05", "t": "정신분석과 문화 이해", "pin": "5205", "secs": 20, "qs": [{"t": "choice", "q": "프로이트의 심적 장치에서 자아(ego)가 맡는 구실은?", "a": ["쾌락을 그대로 밀어붙인다", "이드와 초자아 사이를 중재한다", "부모의 금지를 그대로 물려받는다", "무의식을 남김없이 의식으로 끌어올린다"], "c": 1}, {"t": "ox", "q": "억압된 것은 완전히 사라진다.", "c": 1}, {"t": "short", "q": "쾌락원칙과 달리 현실원칙이 만족에 대해 하는 일은? (두 글자)", "ans": ["지연", "미룸", "유예"], "secs": 25}, {"t": "initial", "q": "초자아가 물려받는다고 한 것 — 부모의 금지와 명령이 자리잡은 것을 무엇이라 하는가?", "hint": "ㄱㅈ", "ans": ["규제", "금지"], "secs": 25}, {"t": "order", "q": "억압이 작동하는 차례를 맞춰 보십시오.", "a": ["충동이 올라온다", "검열이 막는다", "무의식에 눌린다", "모습을 바꿔 돌아온다"], "c": [0, 1, 2, 3], "secs": 30}, {"t": "choice", "q": "『문명 속의 불만』이 말하는 문명의 성격은?", "a": ["안전을 얻는 대신 자유를 내주는 거래", "행복을 늘리기만 하는 장치", "충동을 남김없이 없애는 제도", "죄책감과는 무관한 질서"], "c": 0}]}, {"w": "W06", "t": "구조주의", "pin": "0606"}, {"w": "W07", "t": "후기구조주의", "pin": "0707"}, {"w": "W10", "t": "포스트모더니즘", "pin": "1010"}, {"w": "W11", "t": "자본주의와 소비", "pin": "1111"}, {"w": "W12", "t": "섹슈얼리티와 젠더", "pin": "1212"}, {"w": "W15", "t": "영화 분석", "pin": "1515"}];
 
 if (KEY) $("#key").value = KEY;
 var keyOK = false;
@@ -125,14 +137,32 @@ $("#save").onclick = function () {
   checkKey();
 };
 
+function weekList() {
+  return '<div class="sheet"><h2>퀴즈 고르기</h2>' +
+    '<div class="msg">주차를 고르면 그 퀴즈가 편집창에 채워집니다.</div>' +
+    '<div class="weeks">' + BANK.map(function (b, i) {
+      return '<button class="wk' + (b.qs ? '' : ' empty') + '" data-i="' + i + '"' +
+        (b.qs ? '' : ' disabled') + '><b>' + esc(b.w) + '</b><span>' + esc(b.t) + '</span>' +
+        '<em>' + (b.qs ? b.qs.length + '문항' : '아직 없음') + '</em></button>';
+    }).join('') + '</div></div>';
+}
+
 $("#load").onclick = function () {
+  $("#m").innerHTML = weekList();
+  Array.prototype.forEach.call(document.querySelectorAll(".wk:not([disabled])"), function (b) {
+    b.onclick = function () { openEditor(BANK[+b.dataset.i]); };
+  });
+};
+
+function openEditor(bank) {
   $("#m").innerHTML = '<div class="sheet"><h2>퀴즈 올리기</h2>' +
     '<div class="msg">아래 내용을 고쳐 「올리기」를 누르십시오. 올려도 시작되지는 않습니다.</div>' +
     '<textarea id="qjson"></textarea>' +
     '<div class="row2"><button class="go" id="put">올리기</button>' +
     '<button id="cancel">취소</button><span class="msg" id="pmsg"></span></div></div>';
-  $("#qjson").value = JSON.stringify(SAMPLE, null, 1);
-  $("#cancel").onclick = tick;
+  $("#qjson").value = JSON.stringify(
+    { title: bank.t, pin: bank.pin, secs: bank.secs || 25, reveal: 7, qs: bank.qs }, null, 1);
+  $("#cancel").onclick = $("#load").onclick;
   $("#put").onclick = function () {
     var q;
     try { q = JSON.parse($("#qjson").value); }
@@ -182,7 +212,9 @@ function draw(s) {
   $("#foot").hidden = !run;
   $("#endq").disabled = (s.phase !== "ask");
   $("#endq").textContent = (s.phase === "ask") ? "종료" : "정답 공개 중";
-  $("#nextq").textContent = (s.idx + 1 >= s.n) ? "결과 보기" : "다음 문제";
+  $("#nextq").textContent = (s.phase === "rank")
+    ? ((s.idx + 1 >= s.n) ? "결과 보기" : "다음 문제")
+    : "순위 보기";
   if (!keyOK) return;                       // 코드가 확인되기 전에는 머리글을 건드리지 않는다
   var pn = { ask: "푸는 중", reveal: "정답 공개", rank: "순위" }[s.phase] || "";
   $("#st").textContent = s.phase === "none" ? "관리 코드 확인됨 · 올린 퀴즈가 없습니다"
@@ -235,8 +267,8 @@ function draw(s) {
           (x.r <= 3 ? ["🥇", "🥈", "🥉"][x.r - 1] : x.r) + '</span><span>' + esc(x.nick) +
           '</span><span class="s">' + x.s + '점</span></div>';
       }).join("") + '</div>' +
-      '<div class="pill">' + (s.players || 0) + '명 참여 · ' + s.left + '초 뒤 ' +
-      (s.idx + 1 >= s.n ? '결과' : '다음 문제') + '</div>';
+      '<div class="pill">' + (s.players || 0) + '명 참여 · 아래 「' +
+      (s.idx + 1 >= s.n ? '결과 보기' : '다음 문제') + '」를 누르십시오</div>';
     return;
   }
 
@@ -261,7 +293,7 @@ function draw(s) {
         (i + 1) + '</span>' + esc(a) + '<span class="cnt">' + (d2[i] || 0) + '명</span>' +
         '<span class="fill" style="width:' + (100 * (d2[i] || 0) / tot2).toFixed(1) + '%"></span></div>';
     }).join("") + '</div>' +
-    '<div class="pill">' + (s.players || 0) + '명 참여 · ' + s.left + '초 뒤 순위</div>';
+    '<div class="pill">' + (s.players || 0) + '명 참여 · 아래 「순위 보기」를 누르십시오</div>';
 }
 
 function tick() {

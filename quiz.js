@@ -105,6 +105,11 @@
       ".qzwait .dots i:nth-child(2){animation-delay:.16s}.qzwait .dots i:nth-child(3){animation-delay:.32s}",
       "@keyframes qzb{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-5px)}}",
       "@media(prefers-reduced-motion:reduce){.qzwait .dots i{animation:none;opacity:.7}}",
+      ".qzres{margin-top:14px;padding:22px 16px;border-radius:12px;text-align:center;color:#fff}",
+      ".qzres.ok{background:#00a99d}.qzres.bad{background:#e4596a}.qzres.none{background:#8a93a6}",
+      ".qzres .face{font-size:46px;line-height:1}",
+      ".qzres .word{font-size:21px;font-weight:700;margin-top:6px}",
+      ".qzres .sub{font-size:14px;opacity:.95;margin-top:4px}",
       ".qzwin{margin-top:12px;padding:12px 14px;border-radius:10px;",
       "  border:1px solid var(--accent,#3d5a80);background:var(--me,#e8eef6);font-size:14px}"
     ].join("\n");
@@ -253,55 +258,17 @@
         if (picked >= 0) body += '<div class="qzmsg">\ub2f5\uc744 \ubcf4\ub0c8\uc2b5\ub2c8\ub2e4.</div>';
       }
       body += '<div class="qzmsg">' + (s.answered || 0) + ' / ' + (s.players || 0) + '\uba85 \ub2f5\ud588\uc2b5\ub2c8\ub2e4</div>';
-    } else if (s.phase === "rank") {
-      body += '<div class="qzq">' + (s.idx + 1) + '번 문제까지 순위</div>' +
-        '<div class="qzbd">' + (s.board || []).slice(0, 5).map(function (x) {
-          return '<div class="row' + (x.r <= 3 ? " top" : "") + '"><span class="r">' +
-            (x.r <= 3 ? MEDAL[x.r - 1] : x.r) + '</span><span>' + esc(x.nick) +
-            '</span><span class="s">' + x.s + '점</span></div>';
-        }).join('') + '</div>' +
-        (s.me ? '<div class="qzmsg">내 점수 <b>' + s.me.s + '</b>점 · ' + s.me.r + '등</div>' : '') +
-        '<div class="qzmsg">' + s.left + '초 뒤 ' +
-        (s.idx + 1 >= s.n ? '결과' : '다음 문제') + '</div>';
     } else {
-      var q = s.q, tt = q.t || "choice";
-      if (tt === "short" || tt === "initial") {
-        body += '<div class="qzq">' + esc(q.q) + '</div>' +
-          '<div class="qzans">\uc815\ub2f5 \u00b7 <b>' + esc((q.ans || []).join(" / ")) + '</b></div>' +
-          (myText ? '<div class="qzmsg">\ub0b4 \ub2f5 \u00b7 ' + esc(myText) + '</div>' : '');
-      } else if (tt === "order") {
-        body += '<div class="qzq">' + esc(q.q) + '</div>' +
-          '<div class="qzord show">' + (q.c || []).map(function (ci, n) {
-            return '<div class="qzoi done"><span class="n">' + (n + 1) + '</span>' + esc(q.a[ci]) + '</div>';
-          }).join('') + '</div>';
-      } else {
-        var d = (s.dist && s.dist.d) || [0, 0, 0, 0];
-        var o2 = (tt === "ox") ? ["O", "X"] : q.a;
-        body += '<div class="qzq">' + esc(q.q) + '</div>' +
-          '<div class="qzopts' + (tt === "ox" ? " ox" : "") + '">' + o2.map(function (a, i) {
-            return '<button class="qzo c' + i + (i === q.c ? " right" : "") + (i === picked ? " mine" : "") +
-              '" disabled><span class="n">' + (i + 1) + '</span>' + esc(a) +
-              '<span class="cnt">' + (d[i] || 0) + '\uba85</span></button>';
-          }).join('') + '</div>';
-      }
-      if (s.me) body += '<div class="qzmsg">\ub0b4 \uc810\uc218 <b>' + s.me.s + '</b>\uc810 \u00b7 ' + s.me.r + '\ub4f1</div>';
-      if (s.phase === "done" && s.me && s.me.r <= 3) {
-        body += sidDone
-          ? '<div class="qzwin"><b>' + ["\ud83e\udd47", "\ud83e\udd48", "\ud83e\udd49"][s.me.r - 1] +
-            ' ' + s.me.r + '\ub4f1</b> \u00b7 \ud559\ubc88\uc744 \ubc1b\uc558\uc2b5\ub2c8\ub2e4. \uac00\uc0b0\uc810 \ucc98\ub9ac\ub294 \uad50\uc218\ub2d8\uc774 \ud558\uc2ed\ub2c8\ub2e4.</div>'
-          : '<div class="qzwin"><b>' + ["\ud83e\udd47", "\ud83e\udd48", "\ud83e\udd49"][s.me.r - 1] +
-            ' ' + s.me.r + '\ub4f1\uc785\ub2c8\ub2e4!</b> \uac00\uc0b0\uc810\uc744 \ubc1b\uc73c\ub824\uba74 \ud559\ubc88\uc744 \uc801\uc5b4 \uc8fc\uc2ed\uc2dc\uc624.' +
-            '<div class="qzjoin"><input id="qzWin" inputmode="numeric" maxlength="10" placeholder="\ud559\ubc88" autocomplete="off">' +
-            '<button id="qzWinGo">\ubcf4\ub0b4\uae30</button></div>' +
-            '<div class="qzmsg" id="qzWinMsg">\ud559\ubc88\uc740 \uad50\uc218\ub2d8\ub9cc \ubd05\ub2c8\ub2e4. \uc21c\uc704\ud45c\uc5d0\ub294 \ub098\uc624\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.</div></div>';
-      }
-      if (s.phase !== "reveal" && s.board && s.board.length) {
-        body += '<div class="qzbd">' + s.board.slice(0, 5).map(function (x) {
-          return '<div class="row' + (x.r <= 3 ? " top" : "") + '"><span class="r">' +
-            (x.r <= 3 ? ["\ud83e\udd47", "\ud83e\udd48", "\ud83e\udd49"][x.r - 1] : x.r) + '</span><span>' +
-            esc(x.nick) + '</span><span class="s">' + x.s + '\uc810</span></div>';
-        }).join('') + '</div>';
-      }
+      // 정답이 공개된 뒤 — 학생에게는 본인이 맞았는지만 보인다.
+      // 정답·보기별 분포·순위는 교수 화면에만 나간다.
+      var okk = s.my ? s.my.ok : null;
+      body += '<div class="qzres ' + (okk === null ? "none" : (okk ? "ok" : "bad")) + '">' +
+        '<div class="face">' + (okk === null ? "·" : (okk ? face("ok") : face("bad"))) + '</div>' +
+        '<div class="word">' + (okk === null ? '답을 내지 않으셨습니다'
+          : (okk ? '맞았습니다!' : '아쉽습니다')) + '</div>' +
+        (s.me ? '<div class="sub">내 점수 ' + s.me.s + '점</div>' : '') +
+        '</div>' +
+        '<div class="qzmsg">다음 문제를 기다려 주십시오.</div>';
     }
     if (!put(head + body)) return;
     var mu = document.getElementById("qzMute");
@@ -377,14 +344,8 @@
         if (s && s.idx !== undefined && s.idx !== lastIdx) {
           picked = -1; lastIdx = s.idx; order = []; myText = "";
         }
-        if (s && s.phase === "reveal" && lastPhase !== "reveal" && picked >= 0) {
-          var q = s.q || {}, tt = q.t || "choice", nm = function (x) {
-            return String(x || "").replace(/\s+/g, "").toLowerCase();
-          };
-          var good = (tt === "short" || tt === "initial")
-            ? (q.ans || []).some(function (a) { return nm(a) === nm(myText); })
-            : (tt === "order") ? order.join("-") === (q.c || []).join("-") : picked === q.c;
-          beep(good ? "ok" : "bad");
+        if (s && s.phase === "reveal" && lastPhase !== "reveal" && s.my) {
+          beep(s.my.ok ? "ok" : "bad");
         }
         if (s) lastPhase = s.phase;
         state = s;
