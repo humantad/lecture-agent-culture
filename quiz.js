@@ -15,7 +15,7 @@
   })();
 
   var box, state = null, joined = false, picked = -1, lastIdx = -1, timer = null, joinedQid = "";
-  var order = [], myText = "", myNick = "", lastPhase = "", sound = true;
+  var order = [], myText = "", myNick = "", lastPhase = "", sound = true, sidDone = false;
   // 학번·닉네임은 기기에 남기지 않는다(2026-10-04 교수 결정) — 퀴즈마다 다시 적는다.
   // myNick 은 그 판이 도는 동안 대기 화면에 이름을 띄우는 데만 쓴다.
   try { sound = localStorage.getItem("quiz-sound") !== "0"; } catch (e) {}
@@ -103,7 +103,9 @@
       "  animation:qzb 1.1s infinite ease-in-out}",
       ".qzwait .dots i:nth-child(2){animation-delay:.16s}.qzwait .dots i:nth-child(3){animation-delay:.32s}",
       "@keyframes qzb{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-5px)}}",
-      "@media(prefers-reduced-motion:reduce){.qzwait .dots i{animation:none;opacity:.7}}"
+      "@media(prefers-reduced-motion:reduce){.qzwait .dots i{animation:none;opacity:.7}}",
+      ".qzwin{margin-top:12px;padding:12px 14px;border-radius:10px;",
+      "  border:1px solid var(--accent,#3d5a80);background:var(--me,#e8eef6);font-size:14px}"
     ].join("\n");
     document.head.appendChild(s);
   }
@@ -145,11 +147,11 @@
     return '<div class="qzjoin">' +
       (hashPin() ? '' :
         '<input id="qzPin" inputmode="numeric" maxlength="4" placeholder="PIN" style="max-width:88px">') +
-      '<input id="qzSid" inputmode="numeric" maxlength="10" placeholder="학번" autocomplete="off">' +
+
       '<input id="qzNick" maxlength="12" placeholder="닉네임 (화면에 보일 이름)">' +
       '<button id="qzGo">참여</button></div>' +
-      '<div class="qzmsg" id="qzMsg">학번은 채점에만 씁니다. 다른 사람에게는 닉네임만 보입니다.' +
-      (hashPin() ? ' QR로 들어오셔서 PIN은 넣지 않으셔도 됩니다.' : '') + '</div>';
+      '<div class="qzmsg" id="qzMsg">\ud654\uba74\uc5d0\ub294 \ub2c9\ub124\uc784\ub9cc \ubcf4\uc785\ub2c8\ub2e4.' +
+      (hashPin() ? ' QR\ub85c \ub4e4\uc5b4\uc624\uc154\uc11c PIN\uc740 \ub123\uc9c0 \uc54a\uc73c\uc154\ub3c4 \ub429\ub2c8\ub2e4.' : '') + '</div>';
   }
 
   function draw() {
@@ -233,6 +235,16 @@
           }).join('') + '</div>';
       }
       if (s.me) body += '<div class="qzmsg">\ub0b4 \uc810\uc218 <b>' + s.me.s + '</b>\uc810 \u00b7 ' + s.me.r + '\ub4f1</div>';
+      if (s.phase === "done" && s.me && s.me.r <= 3) {
+        body += sidDone
+          ? '<div class="qzwin"><b>' + ["\ud83e\udd47", "\ud83e\udd48", "\ud83e\udd49"][s.me.r - 1] +
+            ' ' + s.me.r + '\ub4f1</b> \u00b7 \ud559\ubc88\uc744 \ubc1b\uc558\uc2b5\ub2c8\ub2e4. \uac00\uc0b0\uc810 \ucc98\ub9ac\ub294 \uad50\uc218\ub2d8\uc774 \ud558\uc2ed\ub2c8\ub2e4.</div>'
+          : '<div class="qzwin"><b>' + ["\ud83e\udd47", "\ud83e\udd48", "\ud83e\udd49"][s.me.r - 1] +
+            ' ' + s.me.r + '\ub4f1\uc785\ub2c8\ub2e4!</b> \uac00\uc0b0\uc810\uc744 \ubc1b\uc73c\ub824\uba74 \ud559\ubc88\uc744 \uc801\uc5b4 \uc8fc\uc2ed\uc2dc\uc624.' +
+            '<div class="qzjoin"><input id="qzWin" inputmode="numeric" maxlength="10" placeholder="\ud559\ubc88" autocomplete="off">' +
+            '<button id="qzWinGo">\ubcf4\ub0b4\uae30</button></div>' +
+            '<div class="qzmsg" id="qzWinMsg">\ud559\ubc88\uc740 \uad50\uc218\ub2d8\ub9cc \ubd05\ub2c8\ub2e4. \uc21c\uc704\ud45c\uc5d0\ub294 \ub098\uc624\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.</div></div>';
+      }
       if (s.board && s.board.length) {
         body += '<div class="qzbd">' + s.board.slice(0, 5).map(function (x) {
           return '<div class="row' + (x.r <= 3 ? " top" : "") + '"><span class="r">' +
@@ -259,6 +271,18 @@
       var v = ((inp && inp.value) || "").trim();
       if (v) { myText = v; answer(v); }
     };
+    var wg = document.getElementById("qzWinGo");
+    if (wg) wg.onclick = function () {
+      var v = (document.getElementById("qzWin").value || "").replace(/\D/g, "");
+      var m = document.getElementById("qzWinMsg");
+      if (v.length < 6) { m.textContent = "\ud559\ubc88\uc740 \uc22b\uc790 6\uc790\ub9ac \uc774\uc0c1\uc785\ub2c8\ub2e4."; return; }
+      wg.disabled = true;
+      post({ act: "sid", sid: v }).then(function (r) {
+        wg.disabled = false;
+        if (r && r.ok) { sidDone = true; draw(); }
+        else m.textContent = (r && r.detail) || "\ubcf4\ub0b4\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4.";
+      });
+    };
     var clr = document.getElementById("qzClr");
     if (clr) clr.onclick = function () { order = []; draw(); };
     Array.prototype.forEach.call(box.querySelectorAll(".qzoi[data-i]"), function (b) {
@@ -277,13 +301,12 @@
     var go = document.getElementById("qzGo");
     if (!go) return;
     go.onclick = function () {
-      var sid = (document.getElementById("qzSid").value || "").replace(/\D/g, "");
       var nick = (document.getElementById("qzNick").value || "").trim();
       var msg = document.getElementById("qzMsg");
       go.disabled = true;
       var pe = document.getElementById("qzPin");
       var pin = hashPin() || ((pe && pe.value) || "").replace(/\D/g, "");
-      post({ act: "join", sid: sid, nick: nick, pin: pin }).then(function (r) {
+      post({ act: "join", nick: nick, pin: pin }).then(function (r) {
         go.disabled = false;
         if (r && r.ok) {
           joined = true; myNick = r.nick || nick;
