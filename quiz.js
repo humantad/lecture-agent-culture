@@ -16,6 +16,7 @@
 
   var box, state = null, joined = false, picked = -1, lastIdx = -1, timer = null, joinedQid = "";
   var order = [], myText = "", myNick = "", lastPhase = "", sound = true, sidDone = false;
+  var MEDAL = ["🥇", "🥈", "🥉"];
   // 학번·닉네임은 기기에 남기지 않는다(2026-10-04 교수 결정) — 퀴즈마다 다시 적는다.
   // myNick 은 그 판이 도는 동안 대기 화면에 이름을 띄우는 데만 쓴다.
   try { sound = localStorage.getItem("quiz-sound") !== "0"; } catch (e) {}
@@ -252,6 +253,16 @@
         if (picked >= 0) body += '<div class="qzmsg">\ub2f5\uc744 \ubcf4\ub0c8\uc2b5\ub2c8\ub2e4.</div>';
       }
       body += '<div class="qzmsg">' + (s.answered || 0) + ' / ' + (s.players || 0) + '\uba85 \ub2f5\ud588\uc2b5\ub2c8\ub2e4</div>';
+    } else if (s.phase === "rank") {
+      body += '<div class="qzq">' + (s.idx + 1) + '번 문제까지 순위</div>' +
+        '<div class="qzbd">' + (s.board || []).slice(0, 5).map(function (x) {
+          return '<div class="row' + (x.r <= 3 ? " top" : "") + '"><span class="r">' +
+            (x.r <= 3 ? MEDAL[x.r - 1] : x.r) + '</span><span>' + esc(x.nick) +
+            '</span><span class="s">' + x.s + '점</span></div>';
+        }).join('') + '</div>' +
+        (s.me ? '<div class="qzmsg">내 점수 <b>' + s.me.s + '</b>점 · ' + s.me.r + '등</div>' : '') +
+        '<div class="qzmsg">' + s.left + '초 뒤 ' +
+        (s.idx + 1 >= s.n ? '결과' : '다음 문제') + '</div>';
     } else {
       var q = s.q, tt = q.t || "choice";
       if (tt === "short" || tt === "initial") {
@@ -284,7 +295,7 @@
             '<button id="qzWinGo">\ubcf4\ub0b4\uae30</button></div>' +
             '<div class="qzmsg" id="qzWinMsg">\ud559\ubc88\uc740 \uad50\uc218\ub2d8\ub9cc \ubd05\ub2c8\ub2e4. \uc21c\uc704\ud45c\uc5d0\ub294 \ub098\uc624\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.</div></div>';
       }
-      if (s.board && s.board.length) {
+      if (s.phase !== "reveal" && s.board && s.board.length) {
         body += '<div class="qzbd">' + s.board.slice(0, 5).map(function (x) {
           return '<div class="row' + (x.r <= 3 ? " top" : "") + '"><span class="r">' +
             (x.r <= 3 ? ["\ud83e\udd47", "\ud83e\udd48", "\ud83e\udd49"][x.r - 1] : x.r) + '</span><span>' +

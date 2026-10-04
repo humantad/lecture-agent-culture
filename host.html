@@ -54,6 +54,13 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 .row .r{width:38px}
 .row .s{margin-left:auto;font-variant-numeric:tabular-nums}
 .msg{color:var(--muted);font-size:14px}
+.foot{display:flex;gap:10px;justify-content:center;padding:14px 24px;border-top:1px solid var(--line)}
+.foot button{padding:12px 30px;font-size:16px;font-weight:600}
+.rank{width:min(760px,94vw);display:flex;flex-direction:column;gap:10px}
+.rank .row{font-size:20px;padding:14px 20px}
+.rank .row.t1{background:#2b3a2f;border-color:#4e7c5c}
+.rank .row.t2{background:#2b3240}
+.rank .row.t3{background:#3a3228}
 .ok{color:#7ee2a8}.no{color:#ff9a9a}
 .sheet{width:min(760px,94vw);background:var(--panel);border:1px solid var(--line);
   border-radius:12px;padding:18px;text-align:left}
@@ -76,6 +83,10 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
   </span>
 </div>
 <main id="m"><div class="msg">관리 코드를 넣으면 퀴즈 상태가 보입니다.</div></main>
+<div class="foot" id="foot" hidden>
+  <button id="endq">종료</button>
+  <button id="nextq" class="go">다음 문제</button>
+</div>
 
 <script>
 var API = (new URLSearchParams(location.search).get("api")) ||
@@ -146,6 +157,8 @@ $("#stop").onclick = function () {
   if (!confirm("퀴즈를 멈춥니다. 학생 화면에서 사라집니다.")) return;
   send("stop");
 };
+$("#endq").onclick = function () { send("end"); };
+$("#nextq").onclick = function () { send("next"); };
 function send(act) {
   fetch(API + "/api/quiz", { method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ act: act, key: KEY }) })
@@ -163,12 +176,18 @@ function qrInto(box, pin) {
 
 function draw(s) {
   var m = $("#m");
+  var run = (s.phase === "ask" || s.phase === "reveal" || s.phase === "rank");
   $("#start").hidden = !(s.phase === "idle" || s.phase === "done");
-  $("#stop").hidden = !(s.phase === "ask" || s.phase === "reveal");
+  $("#stop").hidden = !run;
+  $("#foot").hidden = !run;
+  $("#endq").disabled = (s.phase !== "ask");
+  $("#endq").textContent = (s.phase === "ask") ? "종료" : "정답 공개 중";
+  $("#nextq").textContent = (s.idx + 1 >= s.n) ? "결과 보기" : "다음 문제";
   if (!keyOK) return;                       // 코드가 확인되기 전에는 머리글을 건드리지 않는다
+  var pn = { ask: "푸는 중", reveal: "정답 공개", rank: "순위" }[s.phase] || "";
   $("#st").textContent = s.phase === "none" ? "관리 코드 확인됨 · 올린 퀴즈가 없습니다"
     : (s.title || "") + " · " + (s.phase === "idle" ? "대기 중" :
-       s.phase === "done" ? "끝남" : (s.idx + 1) + "/" + s.n + " 문제");
+       s.phase === "done" ? "끝남" : (s.idx + 1) + "/" + s.n + " 문제 · " + pn);
 
   if (s.phase === "none") {
     m.innerHTML = keyOK
@@ -208,24 +227,41 @@ function draw(s) {
     return;
   }
 
-  // reveal · done
+  // 순위 화면 — 그 문항까지의 1~5위
+  if (s.phase === "rank") {
+    m.innerHTML = '<div class="big">' + (s.idx + 1) + '번 문제까지 순위</div>' +
+      '<div class="rank">' + (s.board || []).slice(0, 5).map(function (x) {
+        return '<div class="row t' + (x.r <= 3 ? x.r : 0) + '"><span class="r">' +
+          (x.r <= 3 ? ["🥇", "🥈", "🥉"][x.r - 1] : x.r) + '</span><span>' + esc(x.nick) +
+          '</span><span class="s">' + x.s + '점</span></div>';
+      }).join("") + '</div>' +
+      '<div class="pill">' + (s.players || 0) + '명 참여 · ' + s.left + '초 뒤 ' +
+      (s.idx + 1 >= s.n ? '결과' : '다음 문제') + '</div>';
+    return;
+  }
+
+  // 끝 — 1·2·3위
+  if (s.phase === "done") {
+    m.innerHTML = '<div class="big">최종 순위</div>' +
+      '<div class="rank">' + (s.board || []).slice(0, 3).map(function (x) {
+        return '<div class="row t' + x.r + '"><span class="r">' +
+          ["🥇", "🥈", "🥉"][x.r - 1] + '</span><span>' + esc(x.nick) +
+          '</span><span class="s">' + x.s + '점</span></div>';
+      }).join("") + '</div>' +
+      '<div class="pill">' + (s.players || 0) + '명 참여</div>';
+    return;
+  }
+
+  // 정답·통계 — 순위는 넣지 않는다
   var d2 = (s.dist && s.dist.d) || [0, 0, 0, 0];
   var tot2 = Math.max(1, d2.reduce(function (a, b) { return a + b; }, 0));
-  m.innerHTML =
-    (s.phase === "done" ? '<div class="big">최종 순위</div>' :
-      '<div class="q">' + esc(s.q.q) + "</div>" +
-      '<div class="grid">' + s.q.a.map(function (a, i) {
-        return '<div class="opt o' + i + (i === s.q.c ? " right" : "") + '"><span class="n">' +
-          (i + 1) + "</span>" + esc(a) + '<span class="cnt">' + (d2[i] || 0) + "명</span>" +
-          '<span class="fill" style="width:' + (100 * (d2[i] || 0) / tot2).toFixed(1) + '%"></span></div>';
-      }).join("") + "</div>") +
-    '<div class="board">' + (s.board || []).slice(0, 8).map(function (x) {
-      return '<div class="row' + (x.r <= 3 ? " t" : "") + '"><span class="r">' +
-        (x.r <= 3 ? ["🥇", "🥈", "🥉"][x.r - 1] : x.r) + "</span><span>" + esc(x.nick) +
-        "</span><span class=\"s\">" + x.s + "점</span></div>";
-    }).join("") + "</div>" +
-    '<div class="pill">' + (s.players || 0) + "명 참여" +
-    (s.phase === "reveal" ? " · " + s.left + "초 뒤 다음 문제" : "") + "</div>";
+  m.innerHTML = '<div class="q">' + esc(s.q.q) + '</div>' +
+    '<div class="grid">' + s.q.a.map(function (a, i) {
+      return '<div class="opt o' + i + (i === s.q.c ? " right" : "") + '"><span class="n">' +
+        (i + 1) + '</span>' + esc(a) + '<span class="cnt">' + (d2[i] || 0) + '명</span>' +
+        '<span class="fill" style="width:' + (100 * (d2[i] || 0) / tot2).toFixed(1) + '%"></span></div>';
+    }).join("") + '</div>' +
+    '<div class="pill">' + (s.players || 0) + '명 참여 · ' + s.left + '초 뒤 순위</div>';
 }
 
 function tick() {
