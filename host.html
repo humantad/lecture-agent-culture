@@ -157,12 +157,12 @@ $("#load").onclick = function () {
 
 function openEditor(bank) {
   $("#m").innerHTML = '<div class="sheet"><h2>퀴즈 올리기</h2>' +
-    '<div class="msg">아래 내용을 고쳐 「올리기」를 누르십시오. 올려도 시작되지는 않습니다.</div>' +
+    '<div class="msg">아래 내용을 고쳐 「올리기」를 누르십시오. 올려도 시작되지는 않습니다. ' + 'PIN은 그날 과목마다 정해지므로 적지 않으셔도 됩니다.</div>' +
     '<textarea id="qjson"></textarea>' +
     '<div class="row2"><button class="go" id="put">올리기</button>' +
     '<button id="cancel">취소</button><span class="msg" id="pmsg"></span></div></div>';
   $("#qjson").value = JSON.stringify(
-    { title: bank.t, pin: bank.pin, secs: bank.secs || 25, reveal: 7, qs: bank.qs }, null, 1);
+    { title: bank.t, secs: bank.secs || 25, reveal: 7, qs: bank.qs }, null, 1);
   $("#cancel").onclick = $("#load").onclick;
   $("#put").onclick = function () {
     var q;
