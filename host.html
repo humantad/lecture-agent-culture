@@ -65,6 +65,10 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 .artbig{max-width:360px;margin:0 auto}
 .smoong{display:block;margin:0 auto 6px;width:120px;height:auto}
 .smoong.big{width:180px}
+.head2{display:flex;align-items:center;gap:18px;justify-content:center;flex-wrap:wrap}
+.head2 .smoong{width:96px;margin:0}
+.ttl2{font-size:28px;font-weight:800;letter-spacing:-.01em;text-align:left}
+.bye2{font-size:16px;color:var(--muted);margin-top:2px;text-align:left}
 .artbig svg{width:100%;height:auto;display:block}
 .opt .cnt{position:absolute;right:14px;bottom:10px;font-size:14px;font-weight:800}
 .tim{font-size:46px;font-weight:800;font-variant-numeric:tabular-nums}
@@ -292,7 +296,7 @@ function qrInto(box, pin) {
 
 function draw(s) {
   var m = $("#m");
-  var run = (s.phase === "ask" || s.phase === "reveal" || s.phase === "rank" || s.phase === "done");
+  var run = (s.phase === "ask" || s.phase === "reveal" || s.phase === "rank");
   $("#start").hidden = !(s.phase === "idle" || s.phase === "done");
   $("#stop").hidden = !run;
   $("#foot").hidden = !run;
@@ -301,7 +305,6 @@ function draw(s) {
     (s.phase === "ask") ? "다음"
     : (s.phase === "reveal") ? (isLast ? "최종 순위" : "순위 보기")
     : (s.phase === "rank") ? (isLast ? "최종 순위" : "다음 문제")
-    : (s.phase === "done") ? "마무리"
     : "다음";
   if (!keyOK) return;                       // 코드가 확인되기 전에는 머리글을 건드리지 않는다
   var pn = { ask: "푸는 중", reveal: "정답 공개", rank: "순위" }[s.phase] || "";
@@ -346,8 +349,8 @@ function draw(s) {
 
   // 순위 화면 — 그 문항까지의 1~5위
   if (s.phase === "rank") {
-    m.innerHTML = sm("smoong_12.png", "big") +
-      '<div class="big">' + (s.idx + 1) + '번 문제까지 순위</div>' +
+    m.innerHTML = '<div class="head2">' + sm("smoong_12.png") +
+      '<div class="ttl2">' + (s.idx + 1) + '번 문제까지 순위</div></div>' +
       '<div class="rank">' + (s.board || []).slice(0, 8).map(function (x) {
         return '<div class="row t' + (x.r <= 3 ? x.r : 0) + '"><span class="r">' +
           (x.r <= 3 ? ["🥇", "🥈", "🥉"][x.r - 1] : x.r) + '</span><span>' + esc(x.nick) +
@@ -360,8 +363,9 @@ function draw(s) {
   // 끝 — 1·2·3위
   if (s.phase === "done") {
     var got = (s.board || []).filter(function (x) { return x.sid; }).length;
-    m.innerHTML = sm("smoong_13.png", "big") +
-      '<div class="big">최종 순위</div>' +
+    m.innerHTML = '<div class="head2">' + sm("smoong_13.png") +
+      '<div><div class="ttl2">최종 순위</div>' +
+      '<div class="bye2">수고하셨습니다</div></div></div>' +
       '<div class="rank">' + (s.board || []).slice(0, 3).map(function (x) {
         return '<div class="row t' + x.r + '"><span class="r">' +
           ["🥇", "🥈", "🥉"][x.r - 1] + '</span><span>' + esc(x.nick) +
@@ -370,13 +374,6 @@ function draw(s) {
           '</span><span class="s">' + x.s + '점</span></div>';
       }).join("") + '</div>' +
       '<div class="pill">' + (s.players || 0) + '명 참여 · 학번 ' + got + '/3 들어옴</div>';
-    return;
-  }
-
-  if (s.phase === "bye") {
-    m.innerHTML = sm("smoong_09.png", "big") +
-      '<div class="big">수고하셨습니다</div>' +
-      '<div class="pill">' + (s.players || 0) + '명이 함께했습니다</div>';
     return;
   }
 

@@ -147,7 +147,10 @@
       "  border:1px solid var(--line,#e3e0da);border-radius:9px;background:var(--panel,#fff);color:inherit;cursor:pointer}",
       ".qzoi .n{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:6px;",
       "  background:var(--line,#e3e0da);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}",
-      ".qzoi.on{border-color:var(--accent,#3d5a80)}.qzoi.on .n{background:var(--accent,#3d5a80);color:#fff}",
+      ".qzoi.on{color:#fff;border-color:transparent}",
+      ".qzoi.on .n{background:rgba(0,0,0,.25);color:#fff}",
+      ".qzoi.p0{background:#00a99d}.qzoi.p1{background:#2f80ed}.qzoi.p2{background:#f0a44a}",
+      ".qzoi.p3{background:#e4596a}.qzoi.p4{background:#8e6fd8}.qzoi.p5{background:#4a9d5b}",
       ".qzord.show .qzoi{cursor:default}.qzoi.done .n{background:#00a99d;color:#fff}",
       ".qzjoin button.ghost{background:transparent;color:var(--muted,#646b73);border:1px solid var(--line,#e3e0da)}",
       ".qzmute{border:0;background:transparent;font-size:16px;cursor:pointer;padding:0 4px}",
@@ -252,7 +255,7 @@
 
   // 끝 화면 — 1~3위는 축하와 학번 칸, 나머지는 격려
   function endScreen(s) {
-    var win = s.me && s.me.r <= 3 && s.phase === "done";   // 마무리 단계에서는 학번 칸을 거둔다
+    var win = s.me && s.me.r <= 3;
     var h = '<div class="qzend ' + (win ? "win" : "soft") + '">' +
       '<div class="art">' + (win ? sm("win") : sm("soft")) + '</div>' +
       (win
@@ -332,7 +335,9 @@
             '<button id="qzSend">\ubcf4\ub0b4\uae30</button></div>';
       } else if (t === "order") {
         body += '<div class="qzord">' + s.q.a.map(function (a, i) {
-          return '<button class="qzoi" data-i="' + i + '"><span class="n">\u00b7</span>' + esc(a) + '</button>';
+          var at = order.indexOf(i);
+          return '<button class="qzoi' + (at >= 0 ? ' on p' + (at % 6) : '') + '" data-i="' + i + '">' +
+            '<span class="n">' + (at >= 0 ? (at + 1) : '\u00b7') + '</span>' + esc(a) + '</button>';
         }).join('') + '</div>' +
           (picked >= 0 ? '<div class="qzmsg">\ucc28\ub840\ub97c \ubcf4\ub0c8\uc2b5\ub2c8\ub2e4.</div>'
             : '<div class="qzjoin"><button id="qzSend">\uc774 \ucc28\ub840\ub85c \ubcf4\ub0b4\uae30</button>' +
@@ -349,7 +354,7 @@
     } else {
       // 정답이 공개된 뒤 — 학생에게는 본인이 맞았는지만 보인다.
       // 정답·보기별 분포·순위는 교수 화면에만 나간다.
-      if (s.phase === "done" || s.phase === "bye") { body += endScreen(s); }
+      if (s.phase === "done") { body += endScreen(s); }
       else {
       var okk = s.my ? s.my.ok : null;
       body += '<div class="qzres ' + (okk === null ? "none" : (okk ? "ok" : "bad")) + '">' +
