@@ -110,6 +110,11 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 .wk.empty{opacity:.45;cursor:not-allowed}
 .wk.empty:hover{background:var(--bg);border-color:var(--line);transform:none}
 .wk.empty em{color:var(--muted)}
+.decklist{display:grid;gap:10px;margin-top:10px}
+.deck{border:1px solid #ddd;border-radius:10px;padding:10px 12px;background:#fff;color:#222}
+.deck small{color:#777}
+.btnlink{display:inline-block;margin-top:6px;padding:7px 14px;border-radius:8px;border:1px solid #bbb;text-decoration:none;color:#222;background:#f6f6f6}
+.btnlink.go{background:#2e6bd8;border-color:#2e6bd8;color:#fff}
 </style>
 </head>
 <body>
@@ -120,6 +125,7 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
     <input id="key" type="password" placeholder="관리 코드" autocomplete="off">
     <button id="save">확인</button>
     <button id="load" hidden>퀴즈 올리기</button>
+    <button id="decks" hidden>강의자료</button>
     <button id="start" class="go" hidden>시작</button>
     <button id="stop" class="stop" hidden>멈춤</button>
   </span>
@@ -129,7 +135,7 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
   <button id="nextq" class="go">다음</button>
 </div>
 
-<script>
+<script>window.PHILO_DECKS=[{"week": 2, "title": "문화와 문명의 전통 — 아놀드, 리비스, 엘리아스", "file": "W02_문화와문명 (1).pptx", "drive": "1rCGUyuUHUONTjV7Jxa6SjVElu5AjMX6k"}, {"week": 3, "title": "문화주의 — 호가트, 윌리엄스", "file": "W03_문화주의(보완).pptx", "drive": "130WMDeYy71qCP-LncOn5so8pnrShDfqq"}, {"week": 4, "title": "마르크스주의의 문화적 이해 — 마르크스, 그람시, 알튀세, 프랑크푸르트학파", "file": "W04_마르크스주의_v02.pptx", "drive": "1_U6RzphTqtdpdaR4jPMfrKux2XYCcWf-"}, {"week": 5, "title": "정신분석과 문화 이해 — 프로이트, 융", "file": "W05_정신분석_v02.pptx", "drive": "1sHU3zBjviur7SvZ5EoZ_93nni2p1k4Z7"}];</script><script>
 var API = (new URLSearchParams(location.search).get("api")) ||
           ("https://lecture-agent-culture-api.vercel.app").replace(/\/$/, "");
 var KEY = "";
@@ -150,7 +156,7 @@ function checkKey() {
       keyOK = r.status === 200;
       $("#st").innerHTML = keyOK ? '<span class="ok">관리 코드 확인됨</span>'
         : '<span class="no">관리 코드가 맞지 않습니다 (' + r.status + ')</span>';
-      $("#load").hidden = !keyOK;
+      $("#load").hidden = !keyOK; $("#decks").hidden = !keyOK || !(window.PHILO_DECKS || []).length;
       if (keyOK) tick();
       return keyOK;
     })
@@ -159,6 +165,19 @@ function checkKey() {
       return false;
     });
 }
+
+// 강의자료 — 실제 수업 덱(pptx) 원본을 Google Drive에서 연다/내려받는다(2026-10-04).
+// 파일은 교수 계정 소유·비공유라 링크가 보여도 그 계정으로 로그인해야만 열린다. 애니메이션은 PowerPoint로 열면 그대로.
+$("#decks").onclick = function () {
+  var D = window.PHILO_DECKS || [];
+  $("#m").innerHTML = '<div class="sheet"><h2>강의자료 (수업 덱 원본)</h2>' +
+    '<p class="msg">교수 계정(Google)으로 로그인한 브라우저에서만 열립니다. 내려받아 PowerPoint로 열면 애니메이션까지 그대로 진행됩니다.</p>' +
+    '<div class="decklist">' + D.map(function (d) {
+      return '<div class="deck"><b>' + d.week + '주</b> <span>' + esc(d.title) + '</span><br><small>' + esc(d.file) + '</small><div class="row2">' +
+        '<a class="btnlink go" href="https://drive.google.com/uc?export=download&id=' + encodeURIComponent(d.drive) + '">내려받기</a> ' +
+        '<a class="btnlink" target="_blank" rel="noopener" href="https://drive.google.com/file/d/' + encodeURIComponent(d.drive) + '/view">미리 보기</a></div></div>';
+    }).join("") + '</div></div>';
+};
 
 $("#save").onclick = function () {
   KEY = $("#key").value.trim();
