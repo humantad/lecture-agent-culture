@@ -356,7 +356,7 @@ function draw(s) {
       '<div class="rank">' + (s.board || []).slice(0, 3).map(function (x) {
         return '<div class="row t' + x.r + '"><span class="r">' +
           ["🥇", "🥈", "🥉"][x.r - 1] + '</span><span>' + esc(x.nick) +
-          (x.sid ? '<em class="sid">학번 ' + esc(x.sid) + ' 확인</em>'
+          (x.sid ? '<em class="sid">학번 받음</em>'
                  : '<em class="wait">학번 기다리는 중…</em>') +
           '</span><span class="s">' + x.s + '점</span></div>';
       }).join("") + '</div>' +
