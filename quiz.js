@@ -341,6 +341,9 @@
       .then(function (r) { return r.json(); })
       .then(function (s) {
         if (s && s.qid) joined = (joinedQid === s.qid);
+        if (s && (s.phase === "idle" || s.phase === "none")) {
+          picked = -1; order = []; myText = ""; lastIdx = -1; sidDone = false;   // 멈추면 비운다
+        }
         if (s && s.idx !== undefined && s.idx !== lastIdx) {
           picked = -1; lastIdx = s.idx; order = []; myText = "";
         }
