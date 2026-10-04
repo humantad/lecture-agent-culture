@@ -42,6 +42,8 @@
   var FACE = { ok: ["\ud83c\udf89", "\ud83e\udd73", "\u2728", "\ud83d\udc4f"], bad: ["\ud83d\udca7", "\ud83d\ude3f"] };
   function face(k) { var a = FACE[k] || FACE.ok; return a[Math.floor(Math.random() * a.length)]; }
   try { joinedQid = localStorage.getItem("quiz-joined") || ""; } catch (e) {}
+  var closedQid = "";
+  try { closedQid = localStorage.getItem("quiz-closed") || ""; } catch (e) {}
 
 
   // 끝 화면 그림 — 파일을 받지 않고 그려 쓴다(느리거나 막히는 일이 없게)
@@ -251,12 +253,14 @@
           '<button id="qzWinGo">보내기</button></div>' +
           '<div class="qzmsg" id="qzWinMsg">학번은 교수님만 봅니다. 순위표에는 나오지 않습니다.</div></div>';
     }
+    h += '<div class="qzjoin"><button id="qzClose" class="ghost">퀴즈 창 닫기</button></div>';
     return h;
   }
 
   function draw() {
     var s = state;
     if (!s || s.phase === "none") { box.hidden = true; return; }
+    if (s.qid && closedQid === s.qid) { box.hidden = true; return; }   // 학생이 닫은 퀴즈
     box.hidden = false;
 
     if (s.phase !== "idle") box.removeAttribute("data-form");
@@ -367,6 +371,12 @@
       var inp = document.getElementById("qzTxt");
       var v = ((inp && inp.value) || "").trim();
       if (v) { myText = v; answer(v); }
+    };
+    var cl = document.getElementById("qzClose");
+    if (cl) cl.onclick = function () {
+      closedQid = (state && state.qid) || "";
+      try { localStorage.setItem("quiz-closed", closedQid); } catch (e) {}
+      box.hidden = true;
     };
     var wg = document.getElementById("qzWinGo");
     if (wg) wg.onclick = function () {
