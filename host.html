@@ -128,6 +128,7 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
     <button id="decks" hidden>강의자료</button>
     <button id="start" class="go" hidden>시작</button>
     <button id="stop" class="stop" hidden>멈춤</button>
+    <button id="close" class="stop" hidden>퀴즈 끝내기</button>
   </span>
 </div>
 <main id="m"><div class="msg">관리 코드를 넣으면 퀴즈 상태가 보입니다.</div></main>
@@ -231,6 +232,12 @@ $("#start").onclick = function () {
   if (!confirm("퀴즈를 시작합니다. 학생 화면에 바로 뜹니다. 계속할까요?")) return;
   send("start");
 };
+$("#close").onclick = function () {
+  if (!confirm("퀴즈를 끝냅니다. 학생 화면에서 퀴즈 띠가 사라집니다. 계속할까요?")) return;
+  fetch(API + "/api/quiz", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ act: "live", on: false, key: KEY }) })
+    .then(function () { tick(); }).catch(function () {});
+};
 $("#stop").onclick = function () {
   if (!confirm("퀴즈를 멈춥니다. 학생 화면에서 사라집니다.")) return;
   send("stop");
@@ -319,6 +326,7 @@ function qrInto(box, pin) {
 function draw(s) {
   var m = $("#m");
   var run = (s.phase === "ask" || s.phase === "reveal" || s.phase === "rank");
+  $("#close").hidden = !(s.phase === "idle" || s.phase === "done");
   $("#start").hidden = !(s.phase === "idle" || s.phase === "done");
   $("#stop").hidden = !run;
   $("#foot").hidden = !run;
@@ -346,6 +354,7 @@ function draw(s) {
   }
 
   if (s.phase === "idle") {
+    if (!s.live) send("live");           // QR 을 띄우는 순간 학생 띠가 열린다
     m.innerHTML = '<div class="pill">학생은 아래 주소나 QR로 들어옵니다</div>' +
       '<div class="join"><div id="qr"></div>' +
       '<div><div class="url">' + esc(STUDENT.replace(/^https?:\/\//, "")) + '</div>' +

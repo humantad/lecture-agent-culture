@@ -280,7 +280,7 @@
 
   function draw() {
     var s = state;
-    if (!s || s.phase === "none") { box.hidden = true; return; }
+    if (!s || s.phase === "none") { box.hidden = true; box.removeAttribute("data-form"); return; }
     if (s.qid && closedQid === s.qid) { box.hidden = true; return; }   // 학생이 닫은 퀴즈
     box.hidden = false;
 
