@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>철학으로 읽는 사회와 문화 · 학습 도우미</title>
 <script src="vendor/vis-network.min.js"></script>
-<script src="avatar.js?v=1791108405"></script>
-<script src="quiz.js?v=1791108405" defer></script>
+<script src="avatar.js?v=1791108488"></script>
+<script src="quiz.js?v=1791108488" defer></script>
 <style>
 :root{
   --bg:#f6f5f2; --panel:#ffffff; --ink:#1f2328; --muted:#646b73; --line:#e3e0da;
@@ -442,7 +442,9 @@ function avatarFor(week){
     name:id=>phName(id)||id, section:()=>curKey&&curKey.includes("-s")?curKey:null, quotesFor:quotesOf,
     portraitBase:window.PHILO_ASSET!=null?window.PHILO_ASSET+"portraits/":"/static/portraits/"});
   wireDock();
-  const id=week==null?ph:phOfWeek(week); if(!id) return;
+  // 고른 학자가 그 주차에 나오면 그 학자로(한 주차에 여럿인 과목: 철사문 2·4주, 상정윤 5주 등), 아니면 그 주차의 첫 인물
+  const wk=week==null?null:course.weeks.find(x=>x.week===week);
+  const id=week==null||(ph&&wk?.philosophers.includes(ph))?ph:phOfWeek(week); if(!id) return;
   {const p=course.philosophers.find(p=>p.id===id); avatar.setPhilosopher(id,p?.era,p?.portrait_credit);}
   avatarExamples(id);
 }
