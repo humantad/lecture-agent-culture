@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>철학으로 읽는 사회와 문화 · 학습 도우미</title>
 <script src="vendor/vis-network.min.js"></script>
-<script src="avatar.js?v=1791110251"></script>
-<script src="quiz.js?v=1791110251" defer></script>
+<script src="avatar.js?v=1791110488"></script>
+<script src="quiz.js?v=1791110488" defer></script>
 <style>
 :root{
   --bg:#f6f5f2; --panel:#ffffff; --ink:#1f2328; --muted:#646b73; --line:#e3e0da;
@@ -213,6 +213,9 @@ textarea{flex:1;resize:none;height:48px;padding:11px 12px;border:1px solid var(-
   #phbar .ph-face,#phbar .ph-face svg{width:30px}
   #phbar .ph-face{height:30px}
   #phbar small{color:var(--muted);font-size:11px}
+  #phbar .wk{padding:6px 12px;max-width:62vw}
+  #phbar .wk span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #phbar .wk b{font-size:13px}
   .tabs{overflow-x:auto;scrollbar-width:none}
   .tabs button{flex-shrink:0}
 }
@@ -261,7 +264,7 @@ table.cite td:last-child{white-space:nowrap;color:var(--muted);font-size:12px;wi
   .app{grid-template-columns:1fr}
   #side{display:none;position:fixed;inset:0 20% 0 0;z-index:5;box-shadow:0 0 30px #0005}
   #side.open{display:block}
-  .menu{display:inline-block;align-self:flex-start;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:6px 10px;margin:10px 16px 0;font:inherit}
+  .menu{display:none !important;align-self:flex-start;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:6px 10px;margin:10px 16px 0;font:inherit}
 }
 </style>
 </head>
@@ -342,6 +345,15 @@ const HYP={latent_relation:"잠재 관계",implicit_assumption:"숨은 가정",d
 
 // ---------- 공통 ----------
 const phName=id=>course.philosophers.find(p=>p.id===id)?.name;
+// 주차 칩(인물이 하나뿐인 과목) — 누르면 그 주차 전체를 연다
+function renderWeekBar(){
+  const ws=[...new Set(sections.map(x=>x.week))];
+  const cur=curKey&&curKey!=="cmp"?+curKey.slice(1,3):null;
+  $("#phbar").innerHTML=ws.map(w=>{const t=(course.weeks.find(x=>x.week===w)?.title||"").split(/ — | \(/)[0];
+    return `<button class="ph wk ${w===cur?"on":""}" data-k="w${String(w).padStart(2,"0")}"><b>${w}주</b><span>${esc(t)}</span></button>`;}).join("");
+  $("#phbar").querySelectorAll(".wk").forEach(b=>b.onclick=()=>goUnit(b.dataset.k));
+}
+function goUnit(k){ if(tab!=="ana") $("#tabs").querySelector('[data-t="ana"]')?.click(); openUnit(k); }
 const face=id=>window.PhiloAvatarSVG?`<span class="ph-face">${PhiloAvatarSVG(id)}</span>`:"";
 function renderPhs(){
   const list=course.philosophers.filter(p=>p.persona);
@@ -350,9 +362,11 @@ function renderPhs(){
     const wk=p.weeks.length?p.weeks.join("·")+"주":"";
     return `<button class="ph ${p.id===ph?"on":""}" data-id="${p.id??""}" ${dis?"disabled":""}><span class="ph-n">${face(p.id)}<span>${esc(p.name)}</span></span><small>${wk}</small></button>`;
   }).join("");
-  // 좁은 화면: 탭 아래 가로 칩 줄(메뉴를 열지 않고 바로 고른다). 인물이 하나뿐이면 감춘다
-  $("#phbar").innerHTML=list.length>1?list.map(p=>`<button class="ph ${p.id===ph?"on":""}" data-id="${p.id??""}">${face(p.id)}<span>${esc(p.name)}</span><small>${p.weeks.join("·")}주</small></button>`).join(""):"";
-  $("#phbar").hidden=list.length<2;
+  // 좁은 화면: 메뉴 없이 탭 아래 가로 칩 줄로 고른다. 인물별 과목은 인물 칩, 인물이 하나뿐인 과목(논비사·과철이)은 주차 칩
+  if(list.length>1) $("#phbar").innerHTML=(course.compare?`<button class="ph wk ${curKey==="cmp"?"on":""}" data-k="cmp">⚖ <span>비교</span></button>`:"")
+    +list.map(p=>`<button class="ph ${p.id===ph?"on":""}" data-id="${p.id??""}">${face(p.id)}<span>${esc(p.name)}</span><small>${p.weeks.join("·")}주</small></button>`).join("");
+  else renderWeekBar();
+  $("#phbar").querySelectorAll(".wk").forEach(b=>b.onclick=()=>goUnit(b.dataset.k));
   {const on=$("#phbar .on"); if(on) on.scrollIntoView({block:"nearest",inline:"center"});}
   document.querySelectorAll("#phs .ph,#phbar .ph").forEach(b=>b.onclick=()=>{ph=b.dataset.id||null;history=[];renderPhs();
     if(tab==="chat") welcome(); else if(tab==="ana"){curKey=null;renderSecs();openDefault();} else renderSources();
@@ -477,6 +491,7 @@ async function quotesOf(id){ // 수업 슬라이드에 인용된 그 철학자�
 }
 async function openUnit(key){
   curKey=key; renderSecs(); $("#cpanel").hidden=true;
+  if(course.philosophers.filter(p=>p.persona).length<2) renderWeekBar(); else $("#phbar").querySelectorAll(".wk").forEach(b=>b.classList.toggle("on",b.dataset.k===key));
   avatarFor(key==="cmp"?null:+key.slice(1,3));
   $("#ana").innerHTML=`<div class="empty">불러오는 중…</div>`;
   const cm=await (await api(`/api/conceptmap/${key}`)).json();
