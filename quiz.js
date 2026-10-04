@@ -235,7 +235,7 @@
 
   // 끝 화면 — 1~3위는 축하와 학번 칸, 나머지는 격려
   function endScreen(s) {
-    var win = s.me && s.me.r <= 3;
+    var win = s.me && s.me.r <= 3 && s.phase === "done";   // 마무리 단계에서는 학번 칸을 거둔다
     var h = '<div class="qzend ' + (win ? "win" : "soft") + '">' +
       '<div class="art">' + (win ? artWin() : artSoft()) + '</div>' +
       (win
@@ -332,7 +332,7 @@
     } else {
       // 정답이 공개된 뒤 — 학생에게는 본인이 맞았는지만 보인다.
       // 정답·보기별 분포·순위는 교수 화면에만 나간다.
-      if (s.phase === "done") { body += endScreen(s); }
+      if (s.phase === "done" || s.phase === "bye") { body += endScreen(s); }
       else {
       var okk = s.my ? s.my.ok : null;
       body += '<div class="qzres ' + (okk === null ? "none" : (okk ? "ok" : "bad")) + '">' +

@@ -50,6 +50,20 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 .plain{font-size:clamp(18px,2.4vw,26px);color:var(--ink);max-width:22ch;line-height:1.5}
 .plain.big2{font-size:clamp(24px,3.2vw,38px);font-weight:800}
 .hint{font-weight:800;letter-spacing:.22em;color:var(--accent)}
+.opt .cnt small{font-size:.8em;opacity:.85;font-weight:600}
+.rank .row.good{border-color:#4e7c5c;background:#22302a}
+.rank .row.miss{opacity:.6}
+.rank .row .s small{font-size:.8em;opacity:.85}
+.rank .row em.sid{font-style:normal;font-size:12px;color:#7ee2a8;margin-left:10px}
+.rank .row em.wait{font-style:normal;font-size:12px;color:var(--muted);margin-left:10px}
+.ord{display:flex;flex-direction:column;gap:8px;width:min(760px,92vw)}
+.oi{position:relative;padding:12px 16px 12px 46px;border-radius:11px;color:#fff;font-size:18px;font-weight:600;text-align:left}
+.oi .n{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:7px;
+  background:rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;font-size:13px}
+.oi.k0{background:#00a99d}.oi.k1{background:#2f80ed}.oi.k2{background:#f0a44a}
+.oi.k3{background:#e4596a}.oi.k4{background:#8e6fd8}.oi.k5{background:#4a9d5b}
+.artbig{max-width:360px;margin:0 auto}
+.artbig svg{width:100%;height:auto;display:block}
 .opt .cnt{position:absolute;right:14px;bottom:10px;font-size:14px;font-weight:800}
 .tim{font-size:46px;font-weight:800;font-variant-numeric:tabular-nums}
 .prog{width:min(900px,92vw);height:10px;border-radius:5px;background:var(--line);overflow:hidden}
@@ -204,24 +218,60 @@ function send(act) {
 
 // 보기를 그린다 — 선택형·OX 는 네 칸, 단답·초성은 정답 글자, 순서는 차례
 // right 가 -1 이면 아직 정답을 밝히지 않는 단계다.
-function optsHtml(q, d, tot, right) {
+function artBye() {
+  return '<svg viewBox="0 0 260 150" role="img" aria-label="손 흔드는 인사와 책">' +
+    '<g stroke="#6ea8fe" stroke-width="3" fill="none" stroke-linecap="round">' +
+    '<path d="M60 118h140"/><path d="M78 118V86l52-18 52 18v32"/>' +
+    '<path d="M104 118V96h24v22"/></g>' +
+    '<g stroke="#f6c343" stroke-width="3" stroke-linecap="round">' +
+    '<path d="M196 54l10-10M208 70h12M190 36l4-12"/></g>' +
+    '<circle cx="130" cy="44" r="14" fill="#f6c343"/>' +
+    '<g stroke="#00a99d" stroke-width="3" fill="none" stroke-linecap="round">' +
+    '<path d="M40 60c10-8 22-8 32 0M40 76c10-8 22-8 32 0"/></g>' +
+    '</svg>';
+}
+
+function pct(n, tot) {
+  return tot ? ' <small>' + Math.round(100 * n / tot) + '%</small>' : '';
+}
+
+// 보기를 그린다. open=false 면 아직 정답을 밝히지 않은 단계다.
+function optsHtml(q, d, tot, open, texts) {
   var t = q.t || "choice";
   if (t === "short" || t === "initial") {
-    if (right < 0) return '<div class="plain">학생이 답을 적고 있습니다</div>';
-    return '<div class="plain big2">정답 · ' + esc((q.ans || []).join(" / ")) + '</div>';
+    if (!open) return '<div class="plain">학생이 답을 적고 있습니다</div>';
+    var all = (texts || []).reduce(function (a, x) { return a + x.n; }, 0);
+    return '<div class="plain big2">정답 · ' + esc((q.ans || []).join(" / ")) + '</div>' +
+      '<div class="rank">' + (texts || []).map(function (x) {
+        return '<div class="row ' + (x.ok ? "good" : "miss") + '"><span class="r">' +
+          (x.ok ? "O" : "X") + '</span><span>' + esc(x.v || "(빈 답)") + '</span>' +
+          '<span class="s">' + x.n + '명' + pct(x.n, all) + '</span></div>';
+      }).join("") + '</div>';
   }
   if (t === "order") {
-    if (right < 0) return '<div class="plain">' + (q.a || []).map(esc).join(" · ") + '</div>';
-    return '<div class="rank">' + (q.c || []).map(function (ci, n) {
-      return '<div class="row"><span class="r">' + (n + 1) + '</span><span>' + esc(q.a[ci]) + '</span></div>';
-    }).join("") + '</div>';
+    if (!open) {
+      return '<div class="ord">' + (q.a || []).map(function (a, i) {
+        return '<div class="oi k' + (i % 6) + '"><span class="n">?</span>' + esc(a) + '</div>';
+      }).join("") + '</div>';
+    }
+    var all2 = (texts || []).reduce(function (a, x) { return a + x.n; }, 0);
+    return '<div class="ord">' + (q.c || []).map(function (ci, n) {
+      return '<div class="oi k' + (ci % 6) + '"><span class="n">' + (n + 1) + '</span>' + esc(q.a[ci]) + '</div>';
+    }).join("") + '</div>' +
+      '<div class="rank">' + (texts || []).slice(0, 5).map(function (x) {
+        var seq = String(x.v).split("-").map(function (i) { return (+i) + 1; }).join(" → ");
+        return '<div class="row ' + (x.ok ? "good" : "miss") + '"><span class="r">' +
+          (x.ok ? "O" : "X") + '</span><span>' + esc(seq) + '</span>' +
+          '<span class="s">' + x.n + '명' + pct(x.n, all2) + '</span></div>';
+      }).join("") + '</div>';
   }
   var opts = (t === "ox") ? ["O", "X"] : (q.a || []);
+  var all3 = d.reduce(function (a, b) { return a + b; }, 0);
   return '<div class="grid' + (t === "ox" ? " two" : "") + '">' + opts.map(function (a, i) {
-    var cls = "opt o" + i + (right < 0 ? "" : (i === right ? " right" : " dim"));
+    var cls = "opt o" + i + (!open ? "" : (i === q.c ? " right" : " dim"));
     // 정답을 밝히기 전에는 보기별 인원을 보여 주지 않는다 — 눈치로 고르는 일이 없게
     return '<div class="' + cls + '"><span class="n">' + (i + 1) + '</span>' + esc(a) +
-      (right < 0 ? '' : '<span class="cnt">' + (d[i] || 0) + '명</span>') +
+      (!open ? '' : '<span class="cnt">' + (d[i] || 0) + '명' + pct(d[i] || 0, all3) + '</span>') +
       '</div>';
   }).join("") + '</div>';
 }
@@ -235,7 +285,7 @@ function qrInto(box, pin) {
 
 function draw(s) {
   var m = $("#m");
-  var run = (s.phase === "ask" || s.phase === "reveal" || s.phase === "rank");
+  var run = (s.phase === "ask" || s.phase === "reveal" || s.phase === "rank" || s.phase === "done");
   $("#start").hidden = !(s.phase === "idle" || s.phase === "done");
   $("#stop").hidden = !run;
   $("#foot").hidden = !run;
@@ -244,6 +294,7 @@ function draw(s) {
     (s.phase === "ask") ? "다음"
     : (s.phase === "reveal") ? (isLast ? "최종 순위" : "순위 보기")
     : (s.phase === "rank") ? (isLast ? "최종 순위" : "다음 문제")
+    : (s.phase === "done") ? "마무리"
     : "다음";
   if (!keyOK) return;                       // 코드가 확인되기 전에는 머리글을 건드리지 않는다
   var pn = { ask: "푸는 중", reveal: "정답 공개", rank: "순위" }[s.phase] || "";
@@ -281,7 +332,7 @@ function draw(s) {
       '<div class="prog"><i style="width:' + (100 * s.left / s.secs).toFixed(1) + '%"></i></div>' +
       '<div class="q">' + esc(s.q.q) +
       ((s.q.t === "initial" && s.q.hint) ? ' <span class="hint">' + esc(s.q.hint) + '</span>' : '') +
-      "</div>" + optsHtml(s.q, d, tot, -1) +
+      "</div>" + optsHtml(s.q, d, tot, false, null) +
       '<div class="pill">' + (s.answered || 0) + " / " + (s.players || 0) + "명 답했습니다</div>";
     return;
   }
@@ -300,13 +351,23 @@ function draw(s) {
 
   // 끝 — 1·2·3위
   if (s.phase === "done") {
+    var got = (s.board || []).filter(function (x) { return x.sid; }).length;
     m.innerHTML = '<div class="big">최종 순위</div>' +
       '<div class="rank">' + (s.board || []).slice(0, 3).map(function (x) {
         return '<div class="row t' + x.r + '"><span class="r">' +
           ["🥇", "🥈", "🥉"][x.r - 1] + '</span><span>' + esc(x.nick) +
+          (x.sid ? '<em class="sid">학번 ' + esc(x.sid) + ' 확인</em>'
+                 : '<em class="wait">학번 기다리는 중…</em>') +
           '</span><span class="s">' + x.s + '점</span></div>';
       }).join("") + '</div>' +
-      '<div class="pill">' + (s.players || 0) + '명 참여</div>';
+      '<div class="pill">' + (s.players || 0) + '명 참여 · 학번 ' + got + '/3 들어옴</div>';
+    return;
+  }
+
+  if (s.phase === "bye") {
+    m.innerHTML = '<div class="artbig">' + artBye() + '</div>' +
+      '<div class="big">수고하셨습니다</div>' +
+      '<div class="pill">' + (s.players || 0) + '명이 함께했습니다</div>';
     return;
   }
 
@@ -315,7 +376,7 @@ function draw(s) {
   var tot2 = Math.max(1, d2.reduce(function (a, b) { return a + b; }, 0));
   m.innerHTML = '<div class="q">' + esc(s.q.q) +
     ((s.q.t === "initial" && s.q.hint) ? ' <span class="hint">' + esc(s.q.hint) + '</span>' : '') +
-    '</div>' + optsHtml(s.q, d2, tot2, (s.q.c === undefined ? -1 : s.q.c)) +
+    '</div>' + optsHtml(s.q, d2, tot2, true, s.texts) +
     '<div class="pill">' + (s.players || 0) + '명 참여 · 아래 단추로 넘기십시오</div>';
 }
 
