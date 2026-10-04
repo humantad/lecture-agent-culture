@@ -15,6 +15,29 @@
   })();
 
   var box, state = null, joined = false, picked = -1, lastIdx = -1, timer = null;
+  var order = [], myText = "", lastPhase = "", sound = true;
+  try { sound = localStorage.getItem("quiz-sound") !== "0"; } catch (e) {}
+
+  // 효과음 — 파일 없이 만든다. 학생이 화면을 한 번 누른 뒤부터 울린다.
+  var AC = null;
+  function beep(kind) {
+    if (!sound) return;
+    try {
+      AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+      var notes = kind === "ok" ? [523, 659, 784] : kind === "bad" ? [330, 247] : [660];
+      notes.forEach(function (f, i) {
+        var o = AC.createOscillator(), g = AC.createGain(), t0 = AC.currentTime + i * 0.09;
+        o.type = "sine"; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(0.16, t0 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
+        o.connect(g); g.connect(AC.destination);
+        o.start(t0); o.stop(t0 + 0.25);
+      });
+    } catch (e) {}
+  }
+  var FACE = { ok: ["\ud83c\udf89", "\ud83e\udd73", "\u2728", "\ud83d\udc4f"], bad: ["\ud83d\udca7", "\ud83d\ude3f"] };
+  function face(k) { var a = FACE[k] || FACE.ok; return a[Math.floor(Math.random() * a.length)]; }
   try { joined = localStorage.getItem("quiz-joined") === "1"; } catch (e) {}
 
   function esc(s) {
@@ -58,7 +81,20 @@
       ".qzbd .row.top{font-weight:700}",
       ".qzbd .r{width:22px;font-variant-numeric:tabular-nums}",
       ".qzbd .s{margin-left:auto;font-variant-numeric:tabular-nums}",
-      ".qzmsg{margin-top:8px;font-size:13px;color:var(--muted,#646b73)}"
+      ".qzmsg{margin-top:8px;font-size:13px;color:var(--muted,#646b73)}",
+      ".qzhint{font-weight:800;letter-spacing:.2em;color:var(--accent,#3d5a80)}",
+      ".qzans{margin-top:10px;font-size:16px}",
+      ".qzopts.ox{grid-template-columns:1fr 1fr}",
+      ".qzopts.ox .qzo{min-height:88px;font-size:30px;font-weight:800;justify-content:center;padding-left:12px;text-align:center}",
+      ".qzord{display:flex;flex-direction:column;gap:6px;margin-top:10px}",
+      ".qzoi{position:relative;text-align:left;font:inherit;font-size:14.5px;padding:10px 12px 10px 42px;",
+      "  border:1px solid var(--line,#e3e0da);border-radius:9px;background:var(--panel,#fff);color:inherit;cursor:pointer}",
+      ".qzoi .n{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:6px;",
+      "  background:var(--line,#e3e0da);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}",
+      ".qzoi.on{border-color:var(--accent,#3d5a80)}.qzoi.on .n{background:var(--accent,#3d5a80);color:#fff}",
+      ".qzord.show .qzoi{cursor:default}.qzoi.done .n{background:#00a99d;color:#fff}",
+      ".qzjoin button.ghost{background:transparent;color:var(--muted,#646b73);border:1px solid var(--line,#e3e0da)}",
+      ".qzmute{border:0;background:transparent;font-size:16px;cursor:pointer;padding:0 4px}"
     ].join("\n");
     document.head.appendChild(s);
   }
@@ -82,15 +118,17 @@
     }).then(function (r) { return r.json().catch(function () { return {}; }); });
   }
 
-  function answer(i) {
+  function answer(v) {
     if (picked >= 0 || !state || state.phase !== "ask") return;
-    picked = i;
+    picked = (typeof v === "number") ? v : 0;
+    beep("pick");
     draw();
-    post({ act: "answer", idx: state.idx, choice: i });
+    post({ act: "answer", idx: state.idx, choice: v });
   }
 
   function joinForm() {
     return '<div class="qzjoin">' +
+      '<input id="qzPin" inputmode="numeric" maxlength="4" placeholder="PIN" style="max-width:88px">' +
       '<input id="qzSid" inputmode="numeric" maxlength="10" placeholder="학번">' +
       '<input id="qzNick" maxlength="12" placeholder="닉네임 (화면에 보일 이름)">' +
       '<button id="qzGo">참여</button></div>' +
@@ -107,40 +145,97 @@
       '<span class="meta">' + (s.phase === "done" ? "끝났습니다" :
         (s.idx + 1) + " / " + s.n + " 문제") +
       (s.players ? " · " + s.players + "명 참여" : "") + '</span>' +
+      '<button class="qzmute" id="qzMute" title="\uc18c\ub9ac">' + (sound ? "\ud83d\udd0a" : "\ud83d\udd07") + '</button>' +
       (s.phase === "ask" ? '<span class="sec">' + s.left + '</span>' : "") + "</div>";
 
     if (!joined && s.phase !== "done") { box.innerHTML = head + joinForm(); bindJoin(); return; }
 
     var body = "";
     if (s.phase === "ask") {
-      body += '<div class="qzbar"><i style="width:' +
-        (100 * s.left / s.secs).toFixed(1) + '%"></i></div>' +
-        '<div class="qzq">' + esc(s.q.q) + "</div>" +
-        '<div class="qzopts">' + s.q.a.map(function (a, i) {
+      var t = s.q.t || "choice";
+      body += '<div class="qzbar"><i style="width:' + (100 * s.left / s.secs).toFixed(1) + '%"></i></div>' +
+        '<div class="qzq">' + esc(s.q.q) +
+        (t === "initial" && s.q.hint ? ' <span class="qzhint">' + esc(s.q.hint) + '</span>' : '') + '</div>';
+      if (t === "short" || t === "initial") {
+        body += picked >= 0
+          ? '<div class="qzmsg">보낸 답 \u00b7 <b>' + esc(myText) + '</b></div>'
+          : '<div class="qzjoin"><input id="qzTxt" maxlength="40" autocomplete="off" placeholder="\uc815\ub2f5\uc744 \uc801\uc5b4 \uc8fc\uc2ed\uc2dc\uc624">' +
+            '<button id="qzSend">\ubcf4\ub0b4\uae30</button></div>';
+      } else if (t === "order") {
+        body += '<div class="qzord">' + s.q.a.map(function (a, i) {
+          return '<button class="qzoi" data-i="' + i + '"><span class="n">\u00b7</span>' + esc(a) + '</button>';
+        }).join('') + '</div>' +
+          (picked >= 0 ? '<div class="qzmsg">\ucc28\ub840\ub97c \ubcf4\ub0c8\uc2b5\ub2c8\ub2e4.</div>'
+            : '<div class="qzjoin"><button id="qzSend">\uc774 \ucc28\ub840\ub85c \ubcf4\ub0b4\uae30</button>' +
+              '<button id="qzClr" class="ghost">\ub2e4\uc2dc</button></div>');
+      } else {
+        var opts = (t === "ox") ? ["O", "X"] : s.q.a;
+        body += '<div class="qzopts' + (t === "ox" ? " ox" : "") + '">' + opts.map(function (a, i) {
           return '<button class="qzo c' + i + (i === picked ? " mine" : "") + '" data-i="' + i + '"' +
-            (picked >= 0 ? " disabled" : "") + '><span class="n">' + (i + 1) + "</span>" + esc(a) + "</button>";
-        }).join("") + "</div>" +
-        (picked >= 0 ? '<div class="qzmsg">답을 보냈습니다. 정답 공개를 기다려 주십시오.</div>' : "");
+            (picked >= 0 ? " disabled" : "") + '><span class="n">' + (i + 1) + '</span>' + esc(a) + '</button>';
+        }).join('') + '</div>';
+        if (picked >= 0) body += '<div class="qzmsg">\ub2f5\uc744 \ubcf4\ub0c8\uc2b5\ub2c8\ub2e4.</div>';
+      }
+      body += '<div class="qzmsg">' + (s.answered || 0) + ' / ' + (s.players || 0) + '\uba85 \ub2f5\ud588\uc2b5\ub2c8\ub2e4</div>';
     } else {
-      var d = (s.dist && s.dist.d) || [0, 0, 0, 0];
-      body += '<div class="qzq">' + esc(s.q.q) + "</div>" +
-        '<div class="qzopts">' + s.q.a.map(function (a, i) {
-          return '<button class="qzo c' + i + (i === s.q.c ? " right" : "") +
-            (i === picked ? " mine" : "") + '" disabled><span class="n">' + (i + 1) + "</span>" +
-            esc(a) + '<span class="cnt">' + (d[i] || 0) + "명</span></button>";
-        }).join("") + "</div>";
-      if (s.me) body += '<div class="qzmsg">내 점수 <b>' + s.me.s + "</b>점 · " + s.me.r + "등</div>";
+      var q = s.q, tt = q.t || "choice";
+      if (tt === "short" || tt === "initial") {
+        body += '<div class="qzq">' + esc(q.q) + '</div>' +
+          '<div class="qzans">\uc815\ub2f5 \u00b7 <b>' + esc((q.ans || []).join(" / ")) + '</b></div>' +
+          (myText ? '<div class="qzmsg">\ub0b4 \ub2f5 \u00b7 ' + esc(myText) + '</div>' : '');
+      } else if (tt === "order") {
+        body += '<div class="qzq">' + esc(q.q) + '</div>' +
+          '<div class="qzord show">' + (q.c || []).map(function (ci, n) {
+            return '<div class="qzoi done"><span class="n">' + (n + 1) + '</span>' + esc(q.a[ci]) + '</div>';
+          }).join('') + '</div>';
+      } else {
+        var d = (s.dist && s.dist.d) || [0, 0, 0, 0];
+        var o2 = (tt === "ox") ? ["O", "X"] : q.a;
+        body += '<div class="qzq">' + esc(q.q) + '</div>' +
+          '<div class="qzopts' + (tt === "ox" ? " ox" : "") + '">' + o2.map(function (a, i) {
+            return '<button class="qzo c' + i + (i === q.c ? " right" : "") + (i === picked ? " mine" : "") +
+              '" disabled><span class="n">' + (i + 1) + '</span>' + esc(a) +
+              '<span class="cnt">' + (d[i] || 0) + '\uba85</span></button>';
+          }).join('') + '</div>';
+      }
+      if (s.me) body += '<div class="qzmsg">\ub0b4 \uc810\uc218 <b>' + s.me.s + '</b>\uc810 \u00b7 ' + s.me.r + '\ub4f1</div>';
       if (s.board && s.board.length) {
         body += '<div class="qzbd">' + s.board.slice(0, 5).map(function (x) {
           return '<div class="row' + (x.r <= 3 ? " top" : "") + '"><span class="r">' +
-            (x.r <= 3 ? ["🥇", "🥈", "🥉"][x.r - 1] : x.r) + "</span><span>" + esc(x.nick) +
-            "</span><span class=\"s\">" + x.s + "점</span></div>";
-        }).join("") + "</div>";
+            (x.r <= 3 ? ["\ud83e\udd47", "\ud83e\udd48", "\ud83e\udd49"][x.r - 1] : x.r) + '</span><span>' +
+            esc(x.nick) + '</span><span class="s">' + x.s + '\uc810</span></div>';
+        }).join('') + '</div>';
       }
     }
     box.innerHTML = head + body;
+    var mu = document.getElementById("qzMute");
+    if (mu) mu.onclick = function () {
+      sound = !sound;
+      try { localStorage.setItem("quiz-sound", sound ? "1" : "0"); } catch (e) {}
+      draw();
+    };
     Array.prototype.forEach.call(box.querySelectorAll(".qzo:not([disabled])"), function (b) {
       b.onclick = function () { answer(+b.dataset.i); };
+    });
+    var send = document.getElementById("qzSend");
+    if (send) send.onclick = function () {
+      var t = (state.q && state.q.t) || "choice";
+      if (t === "order") { if (order.length === state.q.a.length) answer(order.slice()); return; }
+      var inp = document.getElementById("qzTxt");
+      var v = ((inp && inp.value) || "").trim();
+      if (v) { myText = v; answer(v); }
+    };
+    var clr = document.getElementById("qzClr");
+    if (clr) clr.onclick = function () { order = []; draw(); };
+    Array.prototype.forEach.call(box.querySelectorAll(".qzoi[data-i]"), function (b) {
+      var i = +b.dataset.i, at = order.indexOf(i);
+      if (at >= 0) { b.classList.add("on"); b.querySelector(".n").textContent = at + 1; }
+      b.onclick = function () {
+        if (picked >= 0) return;
+        var k = order.indexOf(i);
+        if (k >= 0) order.splice(k, 1); else order.push(i);
+        draw();
+      };
     });
   }
 
@@ -152,7 +247,8 @@
       var nick = (document.getElementById("qzNick").value || "").trim();
       var msg = document.getElementById("qzMsg");
       go.disabled = true;
-      post({ act: "join", sid: sid, nick: nick }).then(function (r) {
+      var pin = (document.getElementById("qzPin").value || "").replace(/\D/g, "");
+      post({ act: "join", sid: sid, nick: nick, pin: pin }).then(function (r) {
         go.disabled = false;
         if (r && r.ok) {
           joined = true;
@@ -167,7 +263,19 @@
     fetch(API + "/api/quiz?vid=" + encodeURIComponent(vid), { cache: "no-store" })
       .then(function (r) { return r.json(); })
       .then(function (s) {
-        if (s && s.idx !== undefined && s.idx !== lastIdx) { picked = -1; lastIdx = s.idx; }
+        if (s && s.idx !== undefined && s.idx !== lastIdx) {
+          picked = -1; lastIdx = s.idx; order = []; myText = "";
+        }
+        if (s && s.phase === "reveal" && lastPhase !== "reveal" && picked >= 0) {
+          var q = s.q || {}, tt = q.t || "choice", nm = function (x) {
+            return String(x || "").replace(/\s+/g, "").toLowerCase();
+          };
+          var good = (tt === "short" || tt === "initial")
+            ? (q.ans || []).some(function (a) { return nm(a) === nm(myText); })
+            : (tt === "order") ? order.join("-") === (q.c || []).join("-") : picked === q.c;
+          beep(good ? "ok" : "bad");
+        }
+        if (s) lastPhase = s.phase;
         state = s;
         draw();
       })

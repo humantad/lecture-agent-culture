@@ -120,8 +120,9 @@ function draw(s) {
     m.innerHTML = '<div class="pill">학생은 아래 주소나 QR로 들어옵니다</div>' +
       '<div class="join"><div id="qr"></div>' +
       '<div><div class="url">' + esc(STUDENT.replace(/^https?:\/\//, "")) + '</div>' +
-      '<div class="big" style="margin-top:14px">' + (s.players || 0) + '</div>' +
-      '<div class="pill">명 참여 중</div></div></div>' +
+      '<div class="pill" style="margin-top:12px">PIN</div><div class="big">' + esc(s.pin || "----") + '</div>' +
+      '<div class="pill" style="margin-top:12px">참여</div>' +
+      '<div class="big">' + (s.players || 0) + '</div></div></div>' +
       '<div class="msg">「시작」을 누르면 모든 화면이 동시에 1번 문제로 갑니다.</div>';
     qrInto($("#qr"));
     return;
