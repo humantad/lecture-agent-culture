@@ -135,13 +135,21 @@
     post({ act: "answer", idx: state.idx, choice: v });
   }
 
+  // 주소 끝의 #quiz=0000 — QR 로 들어온 사람의 PIN
+  function hashPin() {
+    var m = /(?:^|[#&])quiz=(\d{4})/.exec(location.hash || "");
+    return m ? m[1] : "";
+  }
+
   function joinForm() {
     return '<div class="qzjoin">' +
-      '<input id="qzPin" inputmode="numeric" maxlength="4" placeholder="PIN" style="max-width:88px">' +
+      (hashPin() ? '' :
+        '<input id="qzPin" inputmode="numeric" maxlength="4" placeholder="PIN" style="max-width:88px">') +
       '<input id="qzSid" inputmode="numeric" maxlength="10" placeholder="학번" autocomplete="off">' +
       '<input id="qzNick" maxlength="12" placeholder="닉네임 (화면에 보일 이름)">' +
       '<button id="qzGo">참여</button></div>' +
-      '<div class="qzmsg" id="qzMsg">학번은 채점에만 씁니다. 다른 사람에게는 닉네임만 보입니다.</div>';
+      '<div class="qzmsg" id="qzMsg">학번은 채점에만 씁니다. 다른 사람에게는 닉네임만 보입니다.' +
+      (hashPin() ? ' QR로 들어오셔서 PIN은 넣지 않으셔도 됩니다.' : '') + '</div>';
   }
 
   function draw() {
@@ -273,7 +281,8 @@
       var nick = (document.getElementById("qzNick").value || "").trim();
       var msg = document.getElementById("qzMsg");
       go.disabled = true;
-      var pin = (document.getElementById("qzPin").value || "").replace(/\D/g, "");
+      var pe = document.getElementById("qzPin");
+      var pin = hashPin() || ((pe && pe.value) || "").replace(/\D/g, "");
       post({ act: "join", sid: sid, nick: nick, pin: pin }).then(function (r) {
         go.disabled = false;
         if (r && r.ok) {

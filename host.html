@@ -154,9 +154,11 @@ function send(act) {
     .catch(function () {});
 }
 
-function qrInto(box) {
+function qrInto(box, pin) {
   box.innerHTML = "";
-  qr = new QRCode(box, { text: STUDENT, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.M });
+  // QR 로 들어온 사람은 PIN 을 치지 않는다 — 주소에 실어 보낸다
+  var url = STUDENT + (pin ? "#quiz=" + encodeURIComponent(pin) : "");
+  qr = new QRCode(box, { text: url, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.M });
 }
 
 function draw(s) {
@@ -187,7 +189,7 @@ function draw(s) {
       '<div class="pill" style="margin-top:12px">참여</div>' +
       '<div class="big">' + (s.players || 0) + '</div></div></div>' +
       '<div class="msg">「시작」을 누르면 모든 화면이 동시에 1번 문제로 갑니다.</div>';
-    qrInto($("#qr"));
+    qrInto($("#qr"), s.pin);
     return;
   }
 
