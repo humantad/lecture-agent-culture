@@ -97,7 +97,7 @@ function checkKey() {
     .then(function (r) {
       keyOK = r.status === 200;
       $("#st").innerHTML = keyOK ? '<span class="ok">관리 코드 확인됨</span>'
-                                 : '<span class="no">관리 코드가 맞지 않습니다</span>';
+        : '<span class="no">관리 코드가 맞지 않습니다 (' + r.status + ')</span>';
       $("#load").hidden = !keyOK;
       if (keyOK) tick();
       return keyOK;
@@ -163,7 +163,7 @@ function draw(s) {
   var m = $("#m");
   $("#start").hidden = !(s.phase === "idle" || s.phase === "done");
   $("#stop").hidden = !(s.phase === "ask" || s.phase === "reveal");
-  if (!keyOK && !KEY) return;
+  if (!keyOK) return;                       // 코드가 확인되기 전에는 머리글을 건드리지 않는다
   $("#st").textContent = s.phase === "none" ? "관리 코드 확인됨 · 올린 퀴즈가 없습니다"
     : (s.title || "") + " · " + (s.phase === "idle" ? "대기 중" :
        s.phase === "done" ? "끝남" : (s.idx + 1) + "/" + s.n + " 문제");
