@@ -186,14 +186,27 @@
     if (!s || s.phase === "none") { box.hidden = true; return; }
     box.hidden = false;
 
+    if (s.phase !== "idle") box.removeAttribute("data-form");
+
     // 대기실 — 퀴즈가 올라와 있고 아직 시작 전
     if (s.phase === "idle") {
       var h0 = '<div class="qz"><span class="tag">오늘의 퀴즈</span>' +
         '<span class="ttl">' + esc(s.title || "") + '</span>' +
         '<span class="meta">' + (s.players || 0) + '명 들어왔습니다</span></div>';
       if (!joined) {
-        if (put(h0 + joinForm())) bindJoin();
+        // 입장 화면은 **한 번만** 만든다. 그 뒤로는 참여자 수만 고친다.
+        // 다시 그리면 입력칸이 새로 생겨 휴대폰 키보드가 내려간다.
+        if (box.getAttribute("data-form") !== "1") {
+          box.setAttribute("data-form", "1");
+          lastHtml = "";
+          box.innerHTML = h0 + joinForm();
+          bindJoin();
+        } else {
+          var mt = box.querySelector(".meta");
+          if (mt) mt.textContent = (s.players || 0) + "명 들어왔습니다";
+        }
       } else {
+        box.removeAttribute("data-form");
         put(h0 +
           '<div class="qzwait"><div class="dots"><i></i><i></i><i></i></div>' +
           '<div><b>' + esc(myNick || "") + '</b> 님, 들어왔습니다</div>' +
