@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>철학으로 읽는 사회와 문화 · 학습 도우미</title>
 <script src="vendor/vis-network.min.js"></script>
-<script src="avatar.js?v=1791114142"></script>
-<script src="quiz.js?v=1791114142" defer></script>
+<script src="avatar.js?v=1791114612"></script>
+<script src="quiz.js?v=1791114612" defer></script>
 <style>
 :root{
   --bg:#f6f5f2; --panel:#ffffff; --ink:#1f2328; --muted:#646b73; --line:#e3e0da;
@@ -179,6 +179,43 @@ textarea{flex:1;resize:none;height:48px;padding:11px 12px;border:1px solid var(-
 .av-ex button:hover{border-color:var(--accent)}
 .av-ex b{font-size:12px;color:var(--muted);font-weight:600}
 .av-form{padding:8px 0 0}
+/* 빈칸 채우기 */
+.bl-wrap{position:relative;display:block;line-height:0}
+.bl-wrap img{display:block;width:100%;height:auto}
+.lightbox .bl-wrap{display:inline-block;max-width:100%;max-height:100%}
+.lightbox .bl-wrap img{width:auto;max-width:calc(100vw - 32px);max-height:calc(100vh - 32px)}
+.bl-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.bl-box{fill:#fff6d6;fill-opacity:.55;stroke:#d4a017;stroke-width:3;stroke-dasharray:9 6}
+.bl-box.live{pointer-events:auto;cursor:pointer;fill-opacity:.85}
+.bl-box.live:hover{fill:#ffe9a3}
+.bl-pop{position:fixed;z-index:60;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px #0004;padding:12px;font-size:14px;line-height:1.5}
+.bl-q{margin:0 0 8px;font-weight:600}
+.bl-opts{display:grid;gap:6px}
+.bl-opts button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:9px;padding:9px 10px;font:inherit;text-align:left;cursor:pointer}
+.bl-opts button.ok{background:#d8f2df;border-color:#2e8b57}
+.bl-opts button.no{background:#f9dcdc;border-color:#c0392b}
+.bl-msg{margin:8px 0 0;color:var(--muted);font-size:13px}
+.bl-x{margin-top:6px;border:0;background:none;color:var(--muted);cursor:pointer;font:inherit;font-size:13px}
+.study-btn{margin-left:auto}
+.ahead{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.study{position:fixed;inset:0;z-index:40;background:var(--bg);overflow:auto}
+.st-bar{position:sticky;top:0;display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);z-index:1}
+.st-bar b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.st-prog{color:var(--muted);font-size:13px;white-space:nowrap}
+.st-close{border:0;background:none;font-size:22px;cursor:pointer;color:var(--ink)}
+.st-tip{max-width:900px;margin:10px auto;padding:0 16px;color:var(--muted);font-size:13px}
+.st-list{max-width:900px;margin:0 auto;padding:0 16px 40px;display:grid;gap:14px}
+.st-list figure{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.st-list figcaption{font-size:12px;color:var(--muted);padding:4px 8px}
+@media print{
+  body.studying>*:not(.study){display:none !important}
+  .study{position:static;overflow:visible;background:#fff}
+  .st-bar button,.st-tip,.bl-pop{display:none !important}
+  .st-bar{position:static;border:0}
+  .st-list{max-width:none;padding:0;gap:0}
+  .st-list figure{break-inside:avoid;page-break-inside:avoid;border:0;margin:0 0 6mm}
+  .bl-box{fill:#fff;fill-opacity:1;stroke:#999;stroke-dasharray:none;stroke-width:2}
+}
 #phbar{display:none}
 .av-toggle{display:none}
 @media (max-width:1100px){#cpanel{position:fixed;inset:0;width:auto;z-index:8}.cp-cmp{grid-template-columns:1fr}}
@@ -512,7 +549,8 @@ function renderUnit(cm,ana,sec){
   const dtBtn=`<button class="mini ${showDT?"on":""}" id="dtT" ${dtN?"":"disabled"} title="${dtN?"LLM 분석으로 찾은 결정 관계를 겹쳐 봅니다":"이 범위는 아직 논증 분석 전이라 결정 관계가 없습니다"}">결정 관계${dtN?` ${dtN}`:""}</button>`;
   $("#ana").innerHTML=`
   <div class="ahead"><h2>${esc(cm.title)}</h2><span class="meta">${cm.week}주 · 수업 핵심어 ${cm.nodes.length}개
-   ${sec?` · ${esc(sec.source)} 슬라이드 ${sec.slides[0]}–${sec.slides.at(-1)}`:` · 논증 분석된 절 ${cm.analysed_sections.length}/${cm.sections_total}`}</span></div>
+   ${sec?` · ${esc(sec.source)} 슬라이드 ${sec.slides[0]}–${sec.slides.at(-1)}`:` · 논증 분석된 절 ${cm.analysed_sections.length}/${cm.sections_total}`}</span>
+   <button class="mini study-btn" type="button" data-unit="${esc(curKey)}">📄 슬라이드 모아 보기 · 빈칸 채우기</button></div>
   <div class="grid2">
     <div class="card"><h3>개념 지도 — 수업 중 등장한 개념 ${dtBtn}</h3>
       <div id="graph"></div>
@@ -700,6 +738,95 @@ function lightbox(img){
   d.onclick=()=>d.remove(); document.addEventListener("keydown",function k(e){if(e.key==="Escape"){d.remove();document.removeEventListener("keydown",k);}});
   document.body.append(d);
 }
+
+// ---------- 빈칸 채우기(2026-10-04) ----------
+// 공개 사이트의 슬라이드 그림은 빈칸 낱말이 비어 있다(export_blanks.ps1). 빈칸을 누르면 보기 4개 중에서 고르고,
+// 맞히면 이 기기에 저장해 그 칸에 정답을 보여 준다. 틀리면 그 칸은 5분 뒤에 다시 고를 수 있다.
+// 정답은 해시로만 확인한다(blanks.py). 그림 위 빈칸은 SVG로 겹쳐 그린다(1280×720 좌표).
+let BL=null, blLoading=null;
+const BL_LOCK=5*60*1000;
+const blKey=()=>"philo-blanks-"+(course?.id||"");
+function blanksData(){
+  if(BL) return Promise.resolve(BL);
+  return blLoading||=fetch(STATIC?"data/blanks.json":"/api/blanks").then(r=>r.ok?r.json():null).catch(()=>null)
+    .then(d=>BL=d||{slides:{},units:{}});
+}
+function blState(){ try{const v=JSON.parse(localStorage.getItem(blKey())||"null"); if(v&&v.s&&v.l) return v;}catch(e){} return {s:{},l:{}}; }
+function blSave(st){ try{localStorage.setItem(blKey(),JSON.stringify(st));}catch(e){} }
+const blNorm=t=>String(t).replace(/[\s·,.:;!?'"‘’“”「」『』()（）\[\]<>〈〉《》\-–—…\/]/g,"").toLowerCase();
+async function blHash(t){
+  const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(`${course.id}|${blNorm(t)}`));
+  return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("").slice(0,24);
+}
+function blOverlay(key,live){
+  const list=BL?.slides?.[key]; if(!list?.length) return "";
+  const st=blState();
+  return `<svg class="bl-svg" viewBox="0 0 1280 720" preserveAspectRatio="none" data-key="${esc(key)}">${list.map(b=>{
+    const [x,y,w,h]=b.box, t=st.s[b.id];
+    if(t) return `<text x="${x}" y="${(y+h*0.8).toFixed(1)}" font-size="${b.px}" fill="${b.color}" font-weight="${b.bold?700:400}" textLength="${w}" lengthAdjust="spacingAndGlyphs">${esc(t)}</text>`;
+    return `<rect class="bl-box${live?" live":""}" data-id="${b.id}" x="${x}" y="${y+2}" width="${Math.max(w,24)}" height="${Math.max(h-4,14)}" rx="5"/>`;
+  }).join("")}</svg>`;
+}
+function blKeyOf(img){ const src=img.getAttribute("src")||""; const i=src.indexOf(SLIDES_BASE); return i<0?null:src.slice(i+SLIDES_BASE.length).split("?")[0]; }
+function blDecorate(img){
+  if(img.dataset.bl) return; const key=blKeyOf(img); if(!key) return; img.dataset.bl="1";
+  if(!BL){ blanksData().then(()=>{delete img.dataset.bl; blDecorate(img);}); return; }
+  if(!BL.slides?.[key]) return;
+  const live=!!img.closest(".lightbox,.study");
+  const w=document.createElement("span"); w.className="bl-wrap"; img.replaceWith(w); w.append(img);
+  w.insertAdjacentHTML("beforeend",blOverlay(key,live));
+}
+function blRefresh(key){
+  document.querySelectorAll(`.bl-svg[data-key="${CSS.escape(key)}"]`).forEach(s=>{s.outerHTML=blOverlay(key,!!s.closest(".lightbox,.study"));});
+  blProgress();
+}
+new MutationObserver(ms=>{for(const m of ms) for(const n of m.addedNodes){ if(n.nodeType!==1) continue;
+  (n.tagName==="IMG"?[n]:n.querySelectorAll?.("img")||[]).forEach(blDecorate);}}).observe(document.body,{childList:true,subtree:true});
+const blMMSS=ms=>{const s=Math.ceil(ms/1000);return `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;};
+function blPick(rect){
+  document.querySelector(".bl-pop")?.remove();
+  const id=rect.dataset.id, key=rect.closest(".bl-svg").dataset.key, b=BL.slides[key].find(x=>x.id===id); if(!b) return;
+  const st=blState(), left=(st.l[id]||0)+BL_LOCK-Date.now();
+  const pop=document.createElement("div"); pop.className="bl-pop";
+  pop.innerHTML=left>0
+    ?`<p class="bl-msg">처음 입력 후 5분이 지난 후 입력할 수 있습니다.<br><small>남은 시간 ${blMMSS(left)}</small></p><button type="button" class="bl-x">닫기</button>`
+    :`<p class="bl-q">빈칸에 들어갈 말은?</p><div class="bl-opts">${b.opts.map(o=>`<button type="button">${esc(o)}</button>`).join("")}</div><p class="bl-msg"></p><button type="button" class="bl-x">닫기</button>`;
+  document.body.append(pop);
+  const r=rect.getBoundingClientRect(), pw=Math.min(300,innerWidth-16);
+  pop.style.width=pw+"px"; pop.style.left=Math.max(8,Math.min(innerWidth-pw-8,r.left+r.width/2-pw/2))+"px";
+  pop.style.top=(r.bottom+8+pop.offsetHeight<innerHeight?r.bottom+8:Math.max(8,r.top-8-pop.offsetHeight))+"px";
+  pop.querySelector(".bl-x").onclick=()=>pop.remove();
+  pop.querySelectorAll(".bl-opts button").forEach(btn=>btn.onclick=async()=>{
+    pop.querySelectorAll(".bl-opts button").forEach(x=>x.disabled=true);
+    const ok=(await blHash(btn.textContent))===b.h, s2=blState(), msg=pop.querySelector(".bl-msg");
+    if(ok){ s2.s[id]=btn.textContent; delete s2.l[id]; blSave(s2); btn.classList.add("ok"); msg.textContent="정답입니다! 이제 이 칸에는 정답이 보입니다."; setTimeout(()=>{pop.remove();blRefresh(key);},900); }
+    else{ s2.l[id]=Date.now(); blSave(s2); btn.classList.add("no"); msg.textContent="아쉽습니다. 이 칸은 5분 뒤에 다시 고를 수 있습니다."; }
+  });
+}
+document.addEventListener("click",e=>{const r=e.target.closest?.(".bl-box.live"); if(!r) return; e.stopPropagation(); e.preventDefault(); blPick(r);},true);
+document.addEventListener("click",e=>{const p=document.querySelector(".bl-pop"); if(p&&!e.target.closest(".bl-pop,.bl-box")) p.remove();});
+// 단원(주차·절) 슬라이드 모아 보기 — 화면에서 빈칸을 채우고, 인쇄/PDF로 저장
+function blProgress(){
+  const el=document.querySelector(".study .st-prog"); if(!el||!BL) return;
+  const keys=JSON.parse(el.dataset.keys||"[]"), st=blState(); let all=0, done=0;
+  for(const k of keys) for(const b of BL.slides[k]||[]){ all++; if(st.s[b.id]) done++; }
+  el.textContent=all?`빈칸 ${done} / ${all}`:"";
+}
+async function openStudy(unit){
+  await blanksData();
+  const imgs=BL.units?.[unit]||[]; if(!imgs.length){ alert("이 범위에는 슬라이드 그림이 없습니다."); return; }
+  const title=$("#ana .ahead h2")?.textContent||unit;
+  const d=document.createElement("div"); d.className="study";
+  d.innerHTML=`<div class="st-bar"><b>${esc(course.title)} · ${esc(title)}</b><span class="st-prog" data-keys='${esc(JSON.stringify(imgs))}'></span>
+    <button type="button" class="btn st-print">인쇄 / PDF 저장</button><button type="button" class="st-close" aria-label="닫기">✕</button></div>
+    <p class="st-tip">빈칸을 누르면 보기가 나옵니다. 맞힌 칸은 이 기기에 저장되어 계속 정답이 보입니다. 인쇄하면 채운 칸만 정답이 나옵니다.</p>
+    <div class="st-list">${imgs.map(k=>`<figure><img loading="lazy" src="${SLIDES_BASE}${k}" alt=""><figcaption>${esc(k.replace(/^w0?(\d+)\/s0?(\d+)\.jpg$/,"$1주 · 슬라이드 $2"))}</figcaption></figure>`).join("")}</div>`;
+  document.body.append(d); document.body.classList.add("studying");
+  d.querySelector(".st-close").onclick=()=>{d.remove();document.body.classList.remove("studying");};
+  d.querySelector(".st-print").onclick=()=>window.print();
+  blProgress();
+}
+document.addEventListener("click",e=>{const b=e.target.closest?.(".study-btn"); if(b) openStudy(b.dataset.unit);});
 
 // ---------- 원전 목록 ----------
 let srcData=null, srcQ="";

@@ -63,6 +63,8 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 .oi.k0{background:#00a99d}.oi.k1{background:#2f80ed}.oi.k2{background:#f0a44a}
 .oi.k3{background:#e4596a}.oi.k4{background:#8e6fd8}.oi.k5{background:#4a9d5b}
 .artbig{max-width:360px;margin:0 auto}
+.smoong{display:block;margin:0 auto 6px;width:120px;height:auto}
+.smoong.big{width:180px}
 .artbig svg{width:100%;height:auto;display:block}
 .opt .cnt{position:absolute;right:14px;bottom:10px;font-size:14px;font-weight:800}
 .tim{font-size:46px;font-weight:800;font-variant-numeric:tabular-nums}
@@ -218,6 +220,11 @@ function send(act) {
 
 // 보기를 그린다 — 선택형·OX 는 네 칸, 단답·초성은 정답 글자, 순서는 차례
 // right 가 -1 이면 아직 정답을 밝히지 않는 단계다.
+var MASCOT = "mascot/";
+function sm(file, cls) {
+  return '<img class="smoong ' + (cls || "") + '" alt="" src="' + MASCOT + file + '">';
+}
+
 function artBye() {
   return '<svg viewBox="0 0 260 150" role="img" aria-label="손 흔드는 인사와 책">' +
     '<g stroke="#6ea8fe" stroke-width="3" fill="none" stroke-linecap="round">' +
@@ -339,7 +346,8 @@ function draw(s) {
 
   // 순위 화면 — 그 문항까지의 1~5위
   if (s.phase === "rank") {
-    m.innerHTML = '<div class="big">' + (s.idx + 1) + '번 문제까지 순위</div>' +
+    m.innerHTML = sm("smoong_12.png", "big") +
+      '<div class="big">' + (s.idx + 1) + '번 문제까지 순위</div>' +
       '<div class="rank">' + (s.board || []).slice(0, 8).map(function (x) {
         return '<div class="row t' + (x.r <= 3 ? x.r : 0) + '"><span class="r">' +
           (x.r <= 3 ? ["🥇", "🥈", "🥉"][x.r - 1] : x.r) + '</span><span>' + esc(x.nick) +
@@ -352,7 +360,8 @@ function draw(s) {
   // 끝 — 1·2·3위
   if (s.phase === "done") {
     var got = (s.board || []).filter(function (x) { return x.sid; }).length;
-    m.innerHTML = '<div class="big">최종 순위</div>' +
+    m.innerHTML = sm("smoong_13.png", "big") +
+      '<div class="big">최종 순위</div>' +
       '<div class="rank">' + (s.board || []).slice(0, 3).map(function (x) {
         return '<div class="row t' + x.r + '"><span class="r">' +
           ["🥇", "🥈", "🥉"][x.r - 1] + '</span><span>' + esc(x.nick) +
@@ -365,7 +374,7 @@ function draw(s) {
   }
 
   if (s.phase === "bye") {
-    m.innerHTML = '<div class="artbig">' + artBye() + '</div>' +
+    m.innerHTML = sm("smoong_09.png", "big") +
       '<div class="big">수고하셨습니다</div>' +
       '<div class="pill">' + (s.players || 0) + '명이 함께했습니다</div>';
     return;

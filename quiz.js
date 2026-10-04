@@ -16,6 +16,20 @@
 
   var box, state = null, joined = false, picked = -1, lastIdx = -1, timer = null, joinedQid = "";
   var order = [], myText = "", myNick = "", lastPhase = "", sound = true, sidDone = false;
+  // 수뭉이 — 상명대 마스코트. 화면마다 다른 표정을 쓴다.
+  var MASCOT = (window.PHILO_STATIC ? "mascot/" : "/static/mascot/");
+  var SM = {
+    ok: ["smoong_04.png", "smoong_10.png", "smoong_02.png"],   // 하트눈 · 엄지 · 반가움
+    bad: ["smoong_01.png", "smoong_06.png", "smoong_08.png"],  // 울음 · 힘듦 · 엎드림
+    wait: ["smoong_07.png"],                                   // 노트북
+    win: ["smoong_13.png"],                                    // 장미 · 윙크
+    soft: ["smoong_09.png"]                                    // 누워 쉬는
+  };
+  function sm(kind) {
+    var a = SM[kind] || SM.ok;
+    return '<img class="smoong" alt="" src="' + MASCOT + a[Math.floor(Math.random() * a.length)] + '">';
+  }
+
   var MEDAL = ["🥇", "🥈", "🥉"];
   // 학번·닉네임은 기기에 남기지 않는다(2026-10-04 교수 결정) — 퀴즈마다 다시 적는다.
   // myNick 은 그 판이 도는 동안 대기 화면에 이름을 띄우는 데만 쓴다.
@@ -150,6 +164,9 @@
       ".qzend.soft{background:linear-gradient(160deg,#e7eef7,#dbe6f3);color:#23334a}",
       ".qzend .art{max-width:260px;margin:0 auto 6px}",
       ".qzend .art svg{width:100%;height:auto;display:block}",
+      ".smoong{display:block;margin:0 auto;width:120px;height:auto}",
+      ".qzend .smoong{width:150px}",
+      ".qzwait .smoong{width:96px;margin-bottom:6px}",
       ".qzend .big{font-size:24px;font-weight:800;letter-spacing:-.01em}",
       ".qzend .sub{font-size:14.5px;margin-top:4px;opacity:.9}",
       ".qzres.ok{background:#00a99d}.qzres.bad{background:#e4596a}.qzres.none{background:#8a93a6}",
@@ -237,7 +254,7 @@
   function endScreen(s) {
     var win = s.me && s.me.r <= 3 && s.phase === "done";   // 마무리 단계에서는 학번 칸을 거둔다
     var h = '<div class="qzend ' + (win ? "win" : "soft") + '">' +
-      '<div class="art">' + (win ? artWin() : artSoft()) + '</div>' +
+      '<div class="art">' + (win ? sm("win") : sm("soft")) + '</div>' +
       (win
         ? '<div class="big">' + MEDAL[s.me.r - 1] + ' 축하합니다!</div>' +
           '<div class="sub">' + esc(myNick || "") + ' 님 \u00b7 ' + s.me.r + '등 \u00b7 ' + s.me.s + '점</div>'
@@ -285,7 +302,7 @@
       } else {
         box.removeAttribute("data-form");
         put(h0 +
-          '<div class="qzwait"><div class="dots"><i></i><i></i><i></i></div>' +
+          '<div class="qzwait">' + sm("wait") + '<div class="dots"><i></i><i></i><i></i></div>' +
           '<div><b>' + esc(myNick || "") + '</b> 님, 들어왔습니다</div>' +
           '<div class="qzmsg">교수님이 시작하면 첫 문제가 바로 나옵니다. 화면을 두고 기다려 주십시오.</div></div>');
       }
@@ -336,7 +353,7 @@
       else {
       var okk = s.my ? s.my.ok : null;
       body += '<div class="qzres ' + (okk === null ? "none" : (okk ? "ok" : "bad")) + '">' +
-        '<div class="face">' + (okk === null ? "·" : (okk ? face("ok") : face("bad"))) + '</div>' +
+        (okk === null ? '<div class="face">·</div>' : sm(okk ? "ok" : "bad")) +
         '<div class="word">' + (okk === null ? '답을 내지 않으셨습니다'
           : (okk ? '맞았습니다!' : '아쉽습니다')) + '</div>' +
         (s.me ? '<div class="sub">내 점수 ' + s.me.s + '점' +
