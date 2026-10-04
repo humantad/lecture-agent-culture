@@ -541,15 +541,28 @@
   const IDLE_MS = 25000;
   const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-  // 수업 입장 코드(공개 사이트 대화용) — 한 번 물어 이 브라우저에 기억한다
-  function classCode(reset) {
-    let c = "";
-    try { c = reset ? "" : localStorage.getItem("philo-class-code") || ""; } catch (e) { /* 저장소를 못 쓰면 매번 묻는다 */ }
-    if (!c) {
-      c = (window.prompt("수업 시간에 안내받은 입장 코드를 입력하세요") || "").trim();
-      try { localStorage.setItem("philo-class-code", c); } catch (e) { /* 무시 */ }
-    }
-    return c;
+  // 수업 입장 코드(공개 사이트 대화용) — 한 번 물어 이 브라우저에 기억한다.
+  // window.prompt 는 카카오톡 등 앱 안 브라우저·일부 휴대폰에서 아예 뜨지 않으므로 화면 안 입력 창을 쓴다(2026-10-04)
+  let memCode = "";
+  function classCode(reset, wrong) {
+    let c = memCode;
+    try { c = reset ? "" : localStorage.getItem("philo-class-code") || memCode; } catch (e) { /* 저장소를 못 쓰면 이 페이지에서만 기억 */ }
+    if (c) return Promise.resolve(c);
+    return new Promise((resolve) => {
+      const d = document.createElement("div"); d.className = "egg";
+      d.innerHTML = `<div class="egg-box" role="dialog" aria-label="입장 코드">
+        <div class="egg-t">🔑 입장 코드</div>
+        <p>${wrong ? "<b>입장 코드가 맞지 않습니다.</b> 다시 입력해 주세요." : "수업 시간에 안내받은 입장 코드를 입력하세요. 한 번 넣으면 이 기기에서 기억합니다."}</p>
+        <form><input maxlength="40" placeholder="입장 코드" autocomplete="off" autocapitalize="off" spellcheck="false" required>
+        <button class="btn">확인</button></form>
+        <button class="egg-x" type="button">취소</button></div>`;
+      document.body.append(d);
+      const inp = d.querySelector("input");
+      const done = (v) => { d.remove(); memCode = v; try { if (v) localStorage.setItem("philo-class-code", v); } catch (e) { /* 무시 */ } resolve(v); };
+      d.querySelector(".egg-x").onclick = () => done("");
+      d.querySelector("form").onsubmit = (e) => { e.preventDefault(); done(inp.value.trim()); };
+      setTimeout(() => inp.focus(), 50);
+    });
   }
 
   window.PhiloAvatarSVG = svg; // 미리보기·점검용
@@ -680,10 +693,17 @@
       if (!opts.askable) { add("공개 사이트에서는 아직 대화 서버가 연결되지 않았습니다. 수업 중에 연결되면 질문할 수 있습니다.", "sys"); return; }
       busy = true; const wait = add("…", "bot"); thinking(true);
       try {
-        const send = () => opts.api("/api/ask", { method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question: q, philosopher: pid, mode: "persona", history, section: opts.section(), code: classCode(), vid: window.philoVid ? window.philoVid() : "", staff: !!(window.philoStaff && window.philoStaff()) }) });
-        let res = await send();
-        if (res.status === 401) { classCode(true); res = await send(); } // 입장 코드가 틀리면 한 번 다시 묻는다
+        const send = (code) => opts.api("/api/ask", { method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question: q, philosopher: pid, mode: "persona", history, section: opts.section(), code, vid: window.philoVid ? window.philoVid() : "", staff: !!(window.philoStaff && window.philoStaff()) }) });
+        let code = await classCode();
+        if (!code) throw new Error("입장 코드를 입력해야 질문할 수 있습니다. 다시 질문하면 입력 창이 뜹니다.");
+        let res = await send(code);
+        for (let i = 0; i < 2 && res.status === 401; i++) { // 입장 코드가 틀리면 입력 창을 다시 띄운다(두 번까지)
+          memCode = ""; try { localStorage.removeItem("philo-class-code"); } catch (e) { /* 무시 */ }
+          code = await classCode(true, true);
+          if (!code) throw new Error("입장 코드를 입력해야 질문할 수 있습니다. 다시 질문하면 입력 창이 뜹니다.");
+          res = await send(code);
+        }
         const r = await res.json(); if (!res.ok) throw new Error(r.detail || res.status);
         let h = r.notice ? `<div class="notice">${esc(r.notice)}</div>` : "";
         h += esc(r.answer).replace(/\n/g, "<br>");
