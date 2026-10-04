@@ -444,10 +444,11 @@
 
   const OLD_CREDIT = { descartes: "참고 초상: Frans Hals, 1649경 — 초상을 보고 그린 그림", spinoza: "참고 초상: 작자 미상, 1665경 — 초상을 보고 그린 그림" };
 
+  let svgN = 0; // 같은 얼굴을 여러 곳(목록·칩·패널)에 그려도 그라데이션 ID가 겹치지 않게 그릴 때마다 번호를 붙인다
   function svg(id) {
-    const f = FACES[id];
+    const f = FACES[id], k = ++svgN;
     if (!f) return `<svg viewBox="0 0 200 240"><circle cx="100" cy="120" r="100" fill="var(--av-bg)"/></svg>`;
-    const [s1, s2, s3] = f.skin, [h1, h2, h3] = f.hair, E = f.eyes, L = f.lips, g = (n) => `${id}-${n}`;
+    const [s1, s2, s3] = f.skin, [h1, h2, h3] = f.hair, E = f.eyes, L = f.lips, g = (n) => `${id}-${k}-${n}`;
     const eye = (cx) => `
       <ellipse cx="${cx}" cy="${E.y + 1.2}" rx="${E.rw + 2.5}" ry="${E.rh + 3}" fill="${s3}" opacity=".22"/>
       <ellipse cx="${cx}" cy="${E.y}" rx="${E.rw}" ry="${E.rh}" fill="#f7efe6"/>

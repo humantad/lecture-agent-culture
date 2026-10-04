@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>철학으로 읽는 사회와 문화 · 학습 도우미</title>
 <script src="vendor/vis-network.min.js"></script>
-<script src="avatar.js?v=1791107495"></script>
-<script src="quiz.js?v=1791107495" defer></script>
+<script src="avatar.js?v=1791107799"></script>
+<script src="quiz.js?v=1791107799" defer></script>
 <style>
 :root{
   --bg:#f6f5f2; --panel:#ffffff; --ink:#1f2328; --muted:#646b73; --line:#e3e0da;
@@ -169,16 +169,52 @@ textarea{flex:1;resize:none;height:48px;padding:11px 12px;border:1px solid var(-
 @keyframes bob{50%{transform:rotate(.8deg) translateY(1.5px)}}
 .av-face.speaking .av-ring,.av-face.thinking .av-ring{animation:ring 1s ease-in-out infinite}
 @keyframes ring{50%{opacity:.8}}
+/* 철학자 단추 — 얼굴 그림을 붙여 누르기 쉽게(2026-10-04) */
+.ph{padding:6px 8px;min-height:48px;margin:3px 0;border-color:var(--line);background:var(--bg)}
+.ph .ph-n{display:flex;align-items:center;gap:9px;min-width:0}
+.ph-face{width:36px;height:36px;flex-shrink:0;border-radius:50%;overflow:hidden;display:block}
+.ph-face svg{width:36px;height:43px;display:block;margin-top:-2px}
+.av-ex{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.av-ex button{text-align:left;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:7px 10px;cursor:pointer;font:inherit;font-size:13.5px}
+.av-ex button:hover{border-color:var(--accent)}
+.av-ex b{font-size:12px;color:var(--muted);font-weight:600}
+.av-form{padding:8px 0 0}
+#phbar{display:none}
+.av-toggle{display:none}
 @media (max-width:1100px){#cpanel{position:fixed;inset:0;width:auto;z-index:8}.cp-cmp{grid-template-columns:1fr}}
 @media (max-width:1100px){
-  .anawrap{grid-template-columns:minmax(0,1fr);grid-template-rows:auto;overflow:auto;padding-bottom:calc(66px + env(safe-area-inset-bottom))}
+  html,body{overflow-x:hidden}
+  main,.view,.anawrap,.anacol,#ana{min-width:0;max-width:100vw}
+  .anawrap{grid-template-columns:minmax(0,1fr);grid-template-rows:auto;overflow:auto;padding-bottom:calc(84px + env(safe-area-inset-bottom))}
   .anawrap #ana{height:auto;overflow:visible}
   .anacol{height:auto}
-  #avatar{height:auto;overflow:visible;border-left:0;border-top:1px solid var(--line)}
-  .av-face{width:130px}
-  .av-log{max-height:50vh}
-  /* 화면이 좁으면 입력창을 화면 맨 아래에 고정한다(개념지도·논증 탭이 열려 있을 때만 보임) */
-  .av-form{position:fixed;left:0;right:0;bottom:0;z-index:4;margin:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -4px 14px #0001}
+  /* 아바타는 화면 아래 고정 막대: 작은 얼굴 + 입력창. 얼굴을 누르거나 답이 오면 대화창이 펼쳐진다 */
+  #avatar{position:fixed;left:0;right:0;bottom:0;z-index:6;height:auto;max-height:78vh;overflow:hidden;border-left:0;border-top:1px solid var(--line);
+    box-shadow:0 -6px 20px #0002;border-radius:14px 14px 0 0;padding:8px 12px calc(8px + env(safe-area-inset-bottom));
+    display:grid;grid-template-columns:52px minmax(0,1fr);grid-template-areas:"face head" "face form";column-gap:10px;align-items:center}
+  #avatar .av-stage{grid-area:face;cursor:pointer}
+  #avatar .av-face{width:52px}
+  #avatar .av-bubble{display:none}
+  #avatar .av-head{grid-area:head;margin:0;cursor:pointer;min-width:0}
+  #avatar .av-era{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #avatar .av-log,#avatar .av-note{display:none}
+  #avatar .av-form{grid-area:form;margin:4px 0 0;padding:0;border:0}
+  .av-toggle{display:inline-block;border:0;background:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px}
+  #avatar.open{grid-template-columns:64px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;grid-template-areas:"face head" "log log" "form form";height:78vh}
+  #avatar.open .av-face{width:64px}
+  #avatar.open .av-log{display:block;grid-area:log;max-height:none;min-height:0;overflow:auto;margin-top:6px}
+  #avatar.open .av-form{padding-top:8px;border-top:1px solid var(--line)}
+  /* 철학자 고르기 — 탭 아래 가로 칩 줄 */
+  #phbar{display:flex;gap:6px;overflow-x:auto;padding:8px 16px;border-bottom:1px solid var(--line);background:var(--panel);scrollbar-width:none}
+  #phbar::-webkit-scrollbar{display:none}
+  #phbar button{display:flex;align-items:center;gap:6px;flex-shrink:0;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:20px;padding:3px 12px 3px 3px;font:inherit;font-size:13.5px;cursor:pointer}
+  #phbar button{width:auto;min-height:0;margin:0;justify-content:flex-start}
+  #phbar button.on{border-color:var(--accent);background:var(--me);font-weight:600}
+  #phbar .ph-face,#phbar .ph-face svg{width:30px}
+  #phbar .ph-face{height:30px}
+  #phbar small{color:var(--muted);font-size:11px}
+  .tabs{overflow-x:auto;scrollbar-width:none}
+  .tabs button{flex-shrink:0}
 }
 
 .counts{margin-left:auto;align-self:center;display:flex;gap:12px;font-size:12px;color:var(--muted);padding-right:4px}
@@ -225,7 +261,7 @@ table.cite td:last-child{white-space:nowrap;color:var(--muted);font-size:12px;wi
   .app{grid-template-columns:1fr}
   #side{display:none;position:fixed;inset:0 20% 0 0;z-index:5;box-shadow:0 0 30px #0005}
   #side.open{display:block}
-  .menu{display:inline-block;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:6px 10px;margin:10px 16px 0;font:inherit}
+  .menu{display:inline-block;align-self:flex-start;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:6px 10px;margin:10px 16px 0;font:inherit}
 }
 </style>
 </head>
@@ -252,6 +288,7 @@ table.cite td:last-child{white-space:nowrap;color:var(--muted);font-size:12px;wi
   <main>
     <button class="menu" id="menu">☰ 메뉴</button>
     <div class="tabs" id="tabs"><button data-t="chat" class="on">대화</button><button data-t="ana">개념지도 · 논증</button><button data-t="src">원전 목록</button><span id="counts" class="counts" hidden></span></div>
+    <div id="phbar"></div>
     <section class="view on" id="v-chat">
       <div id="log"></div>
       <form id="f">
@@ -305,14 +342,19 @@ const HYP={latent_relation:"잠재 관계",implicit_assumption:"숨은 가정",d
 
 // ---------- 공통 ----------
 const phName=id=>course.philosophers.find(p=>p.id===id)?.name;
+const face=id=>window.PhiloAvatarSVG?`<span class="ph-face">${PhiloAvatarSVG(id)}</span>`:"";
 function renderPhs(){
   const list=course.philosophers.filter(p=>p.persona);
   $("#phs").innerHTML=list.map(p=>{
     const dis=false;
     const wk=p.weeks.length?p.weeks.join("·")+"주":"";
-    return `<button class="ph ${p.id===ph?"on":""}" data-id="${p.id??""}" ${dis?"disabled":""}><span>${esc(p.name)}</span><small>${wk}</small></button>`;
+    return `<button class="ph ${p.id===ph?"on":""}" data-id="${p.id??""}" ${dis?"disabled":""}><span class="ph-n">${face(p.id)}<span>${esc(p.name)}</span></span><small>${wk}</small></button>`;
   }).join("");
-  $("#phs").querySelectorAll(".ph").forEach(b=>b.onclick=()=>{ph=b.dataset.id||null;history=[];renderPhs();
+  // 좁은 화면: 탭 아래 가로 칩 줄(메뉴를 열지 않고 바로 고른다). 인물이 하나뿐이면 감춘다
+  $("#phbar").innerHTML=list.length>1?list.map(p=>`<button class="ph ${p.id===ph?"on":""}" data-id="${p.id??""}">${face(p.id)}<span>${esc(p.name)}</span><small>${p.weeks.join("·")}주</small></button>`).join(""):"";
+  $("#phbar").hidden=list.length<2;
+  {const on=$("#phbar .on"); if(on) on.scrollIntoView({block:"nearest",inline:"center"});}
+  document.querySelectorAll("#phs .ph,#phbar .ph").forEach(b=>b.onclick=()=>{ph=b.dataset.id||null;history=[];renderPhs();
     if(tab==="chat") welcome(); else if(tab==="ana"){curKey=null;renderSecs();openDefault();} else renderSources();
     $("#side").classList.remove("open");});
 }
@@ -399,8 +441,30 @@ function avatarFor(week){
   if(!avatar) avatar=PhiloAvatar($("#avatar"),{api,askable:!STATIC||!!window.PHILO_API_BASE,
     name:id=>phName(id)||id, section:()=>curKey&&curKey.includes("-s")?curKey:null, quotesFor:quotesOf,
     portraitBase:window.PHILO_ASSET!=null?window.PHILO_ASSET+"portraits/":"/static/portraits/"});
+  wireDock();
   const id=week==null?ph:phOfWeek(week); if(!id) return;
   {const p=course.philosophers.find(p=>p.id===id); avatar.setPhilosopher(id,p?.era,p?.portrait_credit);}
+  avatarExamples(id);
+}
+// 아바타 대화창에 예시 질문 단추 — 누르면 바로 묻는다
+function avatarExamples(id){
+  const log=$("#avLog"); if(!log||!avatar) return;
+  const ex=(examples()[id]||examples().null||[]).slice(0,3); if(!ex.length) return;
+  const d=document.createElement("div"); d.className="av-ex";
+  d.innerHTML=`<b>이렇게 물어보세요</b>`+ex.map(e=>`<button type="button">${esc(e)}</button>`).join("");
+  d.querySelectorAll("button").forEach(b=>b.onclick=()=>{d.remove();avatar.ask(b.textContent);});
+  log.append(d);
+}
+// 좁은 화면: 얼굴·이름을 누르면 대화창을 펼치고/접는다. 답이 들어오면 저절로 펼친다
+const narrow=()=>matchMedia("(max-width:1100px)").matches;
+function wireDock(){
+  const box=$("#avatar"); if(!box||box.dataset.dock) return; box.dataset.dock="1";
+  const head=box.querySelector(".av-head"), stage=box.querySelector(".av-stage");
+  if(head&&!head.querySelector(".av-toggle")) head.insertAdjacentHTML("beforeend",`<button type="button" class="av-toggle" aria-label="대화창 펼치기">▴</button>`);
+  const tg=()=>{box.classList.toggle("open");const t=box.querySelector(".av-toggle");if(t)t.textContent=box.classList.contains("open")?"▾":"▴";};
+  [stage,head].forEach(el=>el&&el.addEventListener("click",e=>{if(!narrow()||e.target.closest("#avVoice"))return;tg();}));
+  new MutationObserver(m=>{if(narrow()&&!box.classList.contains("open")&&m.some(r=>[...r.addedNodes].some(n=>n.classList?.contains("av-msg")&&!n.classList.contains("sys"))))tg();})
+    .observe(box.querySelector("#avLog"),{childList:true});
 }
 async function quotesOf(id){ // 수업 슬라이드에 인용된 그 철학자의 문장(“…”)
   if(!srcData) srcData=await (await api("/api/sources")).json();
