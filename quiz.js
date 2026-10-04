@@ -16,8 +16,8 @@
 
   var box, state = null, joined = false, picked = -1, lastIdx = -1, timer = null, joinedQid = "";
   var order = [], myText = "", myNick = "", lastPhase = "", sound = true;
-  var mySid = "";
-  try { myNick = localStorage.getItem("quiz-nick") || ""; mySid = localStorage.getItem("quiz-sid") || ""; } catch (e) {}
+  // 학번·닉네임은 기기에 남기지 않는다(2026-10-04 교수 결정) — 퀴즈마다 다시 적는다.
+  // myNick 은 그 판이 도는 동안 대기 화면에 이름을 띄우는 데만 쓴다.
   try { sound = localStorage.getItem("quiz-sound") !== "0"; } catch (e) {}
 
   // 효과음 — 파일 없이 만든다. 학생이 화면을 한 번 누른 뒤부터 울린다.
@@ -138,11 +138,10 @@
   function joinForm() {
     return '<div class="qzjoin">' +
       '<input id="qzPin" inputmode="numeric" maxlength="4" placeholder="PIN" style="max-width:88px">' +
-      '<input id="qzSid" inputmode="numeric" maxlength="10" placeholder="학번" value="' + esc(mySid) + '">' +
+      '<input id="qzSid" inputmode="numeric" maxlength="10" placeholder="학번" autocomplete="off">' +
       '<input id="qzNick" maxlength="12" placeholder="닉네임 (화면에 보일 이름)">' +
       '<button id="qzGo">참여</button></div>' +
-      '<div class="qzmsg" id="qzMsg">학번은 채점에만 씁니다. 다른 사람에게는 닉네임만 보입니다.' +
-      (mySid ? ' 지난번 값을 채워 두었으니 바꾸셔도 됩니다.' : '') + '</div>';
+      '<div class="qzmsg" id="qzMsg">학번은 채점에만 씁니다. 다른 사람에게는 닉네임만 보입니다.</div>';
   }
 
   function draw() {
@@ -279,7 +278,7 @@
         go.disabled = false;
         if (r && r.ok) {
           joined = true; myNick = r.nick || nick;
-          try { localStorage.setItem("quiz-nick", myNick); localStorage.setItem("quiz-sid", sid); } catch (e) {}
+
           joinedQid = (state && state.qid) || "";
           try { localStorage.setItem("quiz-joined", joinedQid); } catch (e) {}
           draw();
