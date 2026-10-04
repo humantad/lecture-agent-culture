@@ -90,7 +90,7 @@
     var s = document.createElement("style");
     s.id = "quizCss";
     s.textContent = [
-      "#quizBar{position:sticky;top:0;z-index:40;background:var(--panel,#fff);",
+      "#quizBar{position:relative;z-index:1;background:var(--panel,#fff);",
       "  border-bottom:1px solid var(--line,#e3e0da);padding:10px clamp(16px,4vw,48px)}",
       "#quizBar[hidden]{display:none}",
       ".qz{display:flex;align-items:center;gap:12px;flex-wrap:wrap}",
@@ -253,7 +253,7 @@
           '<button id="qzWinGo">보내기</button></div>' +
           '<div class="qzmsg" id="qzWinMsg">학번은 교수님만 봅니다. 순위표에는 나오지 않습니다.</div></div>';
     }
-    h += '<div class="qzjoin"><button id="qzClose" class="ghost">퀴즈 창 닫기</button></div>';
+    h += '<div class="qzjoin"><button id="qzClose" class="ghost">닫기</button></div>';
     return h;
   }
 
