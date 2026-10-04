@@ -93,7 +93,7 @@ var keyOK = false;
 function checkKey() {
   if (!KEY) { $("#st").innerHTML = '<span class="no">관리 코드를 넣어 주십시오</span>'; return Promise.resolve(false); }
   $("#st").textContent = "확인 중…";
-  return fetch(API + "/api/stats?key=" + encodeURIComponent(KEY) + "&days=1", { cache: "no-store" })
+  return fetch(API + "/api/quiz?check=1&key=" + encodeURIComponent(KEY), { cache: "no-store" })
     .then(function (r) {
       keyOK = r.status === 200;
       $("#st").innerHTML = keyOK ? '<span class="ok">관리 코드 확인됨</span>'
@@ -103,7 +103,7 @@ function checkKey() {
       return keyOK;
     })
     .catch(function () {
-      $("#st").innerHTML = '<span class="no">서버에 닿지 못했습니다</span>';
+      $("#st").innerHTML = '<span class="no">서버에 닿지 못했습니다 (네트워크·CORS)</span>';
       return false;
     });
 }
