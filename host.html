@@ -67,6 +67,9 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 .smoong.big{width:180px}
 .head2{display:flex;align-items:center;gap:18px;justify-content:center;flex-wrap:wrap}
 .head2 .smoong{width:96px;margin:0}
+.head2.fin .smoong{width:220px}
+.head2.fin .ttl2{font-size:38px}
+.head2.fin .bye2{font-size:19px}
 .ttl2{font-size:28px;font-weight:800;letter-spacing:-.01em;text-align:left}
 .bye2{font-size:16px;color:var(--muted);margin-top:2px;text-align:left}
 .artbig svg{width:100%;height:auto;display:block}
@@ -363,7 +366,7 @@ function draw(s) {
   // 끝 — 1·2·3위
   if (s.phase === "done") {
     var got = (s.board || []).filter(function (x) { return x.sid; }).length;
-    m.innerHTML = '<div class="head2">' + sm("smoong_13.png") +
+    m.innerHTML = '<div class="head2 fin">' + sm("smoong_13.png") +
       '<div><div class="ttl2">최종 순위</div>' +
       '<div class="bye2">수고하셨습니다</div></div></div>' +
       '<div class="rank">' + (s.board || []).slice(0, 3).map(function (x) {
