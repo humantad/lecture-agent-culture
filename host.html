@@ -86,26 +86,7 @@ var STUDENT = location.origin + location.pathname.replace(/host\.html$/, "");
 var $ = function (s) { return document.querySelector(s); };
 var esc = function (s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); };
 var last = null, qr = null;
-var SAMPLE = {
-  title: "\ucca0\uc0ac\ubb38 5\uc8fc\ucc28 \u00b7 \uc815\uc2e0\ubd84\uc11d\uacfc \ubb38\ud654 \uc774\ud574",
-  pin: "5205", secs: 20, reveal: 6,
-  qs: [
-    { t: "choice", q: "\ud504\ub85c\uc774\ud2b8\uc758 \uc2ec\uc801 \uc7a5\uce58\uc5d0\uc11c \uc790\uc544(ego)\uac00 \ub9e1\ub294 \uad6c\uc2e4\uc740?",
-      a: ["\uc258\ub77d\uc744 \uadf8\ub300\ub85c \ubc00\uc5b4\ubd99\uc778\ub2e4", "\uc774\ub4dc\uc640 \ucd08\uc790\uc544 \uc0ac\uc774\ub97c \uc911\uc7ac\ud55c\ub2e4",
-          "\ubd80\ubaa8\uc758 \uae08\uc9c0\ub97c \uadf8\ub300\ub85c \ubb3c\ub824\ubc1b\ub294\ub2e4", "\ubb34\uc758\uc2dd\uc744 \ub0a8\uae40\uc5c6\uc774 \uc758\uc2dd\uc73c\ub85c \ub04c\uc5b4\uc62c\ub9b0\ub2e4"], c: 1 },
-    { t: "ox", q: "\uc5b5\uc555\ub41c \uac83\uc740 \uc644\uc804\ud788 \uc0ac\ub77c\uc9c4\ub2e4.", c: 1 },
-    { t: "short", q: "\ucea0\ub77d\uc6d0\uce59\uacfc \ub2ec\ub9ac \ud604\uc2e4\uc6d0\uce59\uc774 \ub9cc\uc871\uc5d0 \ub300\ud574 \ud558\ub294 \uc77c\uc740? (\ub450 \uae00\uc790)",
-      ans: ["\uc9c0\uc5f0", "\ubbf8\ub8f8", "\uc720\uc608"], secs: 25 },
-    { t: "initial", q: "\ucd08\uc790\uc544\uac00 \ubb3c\ub824\ubc1b\ub294\ub2e4\uace0 \ud55c \uac83 \u2014 \ubd80\ubaa8\uc758 \uae08\uc9c0\uc640 \uba85\ub839\uc774 \uc790\ub9ac\uc7a1\uc740 \uac83\uc744 \ubb34\uc5c7\uc774\ub77c \ud558\ub294\uac00?",
-      hint: "\u3131\u3148", ans: ["\uaddc\uc81c", "\uae08\uc9c0"], secs: 25 },
-    { t: "order", q: "\uc5b5\uc555\uc774 \uc791\ub3d9\ud558\ub294 \ucc28\ub840\ub97c \ub9de\ucdb0 \ubcf4\uc2ed\uc2dc\uc624.",
-      a: ["\ucda9\ub3d9\uc774 \uc62c\ub77c\uc628\ub2e4", "\uac80\uc5f4\uc774 \ub9c9\ub294\ub2e4", "\ubb34\uc758\uc2dd\uc5d0 \ub20c\ub9b0\ub2e4", "\ubaa8\uc2b5\uc744 \ubc14\uafd4 \ub3cc\uc544\uc628\ub2e4"],
-      c: [0, 1, 2, 3], secs: 30 },
-    { t: "choice", q: "\u300e\ubb38\uba85 \uc18d\uc758 \ubd88\ub9cc\u300f\uc774 \ub9d0\ud558\ub294 \ubb38\uba85\uc758 \uc131\uaca9\uc740?",
-      a: ["\uc548\uc804\uc744 \uc5bb\ub294 \ub300\uc2e0 \uc790\uc720\ub97c \ub0b4\uc8fc\ub294 \uac70\ub798", "\ud589\ubcf5\uc744 \ub298\ub9ac\uae30\ub9cc \ud558\ub294 \uc7a5\uce58",
-          "\ucda9\ub3d9\uc744 \ub0a8\uae40\uc5c6\uc774 \uc5c6\uc560\ub294 \uc81c\ub3c4", "\uc8c4\ucc45\uac10\uacfc\ub294 \ubb34\uad00\ud55c \uc9c8\uc11c"], c: 0 }
-  ]
-};
+var SAMPLE = {"title": "철사문 · 마르크스주의 Quiz (W04 덱)", "pin": "4204", "secs": 25, "reveal": 7, "qs": [{"t": "choice", "q": "그람시의 '헤게모니(Hegemony)'와 사회 구조에 대한 설명으로 올바르지 않은 것은?", "a": ["헤게모니는 자발적 동의를 이끌어내는 과정이다.", "헤게모니의 주 영역은 강제적인 정치사회다.", "대중문화는 양 계급의 타협적 평형 상태다.", "자본주의 유지는 강제와 동의의 결합이 필수다."], "c": 1}, {"t": "choice", "q": "그람시가 분류한 지식인의 개념에 대한 설명 중 가장 적절한 것은?", "a": ["전통적 지식인은 신흥 계급 이익을 대변한다.", "지식인 기능을 수행하는 이가 유기적 지식인이다.", "유기적 지식인은 과거부터 이어진 독립 집단이다.", "헤게모니 장악을 위해 전통적 지식인을 배제한다."], "c": 1}, {"t": "choice", "q": "알튀세르의 문제설정(Problematic)과 징후적 독해(Symptomatic reading)에 대한 설명으로 가장 적절한 것은?", "a": ["문제설정은 텍스트가 묻고 답할 한계를 규정한다.", "징후적 독해는 텍스트의 표면적 의미만 분석한다.", "문제설정은 열린 체계로 모든 질문에 답할 수 있다.", "징후적 독해는 독자의 주관적 감정을 바탕으로 한다."], "c": 0}, {"t": "choice", "q": "전통적 마르크스주의의 기계적 결정론을 극복하기 위한 그람시와 알튀세르의 이론적 기여에 대한 설명으로 가장 적절한 것은?", "a": ["알튀세르는 경제주의를 전적으로 옹호했다.", "그람시는 상부구조의 자율성을 완전히 부인했다.", "두 학자 모두 상부구조의 자율성을 강조했다.", "알튀세르는 주체의 자유로운 능동성을 중시했다."], "c": 2}, {"t": "choice", "q": "아도르노·호르크하이머의 문화산업론에 대한 설명으로 가장 적절한 것은?", "a": ["대중문화는 대중이 자발적으로 만들어낸 산물이다.", "문화산업은 표준화와 유사 개성화를 통해 체제 순응을 유도한다.", "기술 복제는 예술의 민주화를 가져온다고 주장하였다.", "대중의 능동적 해석 능력을 높이 평가하였다."], "c": 1}]};
 
 if (KEY) $("#key").value = KEY;
 var keyOK = false;
