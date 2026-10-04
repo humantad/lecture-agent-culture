@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>오늘의 퀴즈 · 진행 화면</title>
+<script src="vendor/qrcode.min.js"></script>
+<style>
+:root{
+  --bg:#141821; --panel:#1d2330; --ink:#f1f4f9; --muted:#9aa4b4; --line:#2b3340;
+  --accent:#6ea8fe; --c0:#00a99d; --c1:#2f80ed; --c2:#f0a44a; --c3:#e4596a;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"IBM Plex Sans KR",system-ui,-apple-system,"Malgun Gothic",sans-serif;
+  display:flex;flex-direction:column}
+.bar{display:flex;align-items:center;gap:14px;padding:12px 24px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.bar h1{font-size:16px;margin:0;font-weight:700}
+.bar .sp{margin-left:auto;display:flex;gap:8px;align-items:center}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel);
+  color:var(--ink);border-radius:8px;padding:8px 16px}
+button.go{background:var(--accent);border-color:var(--accent);color:#0d1016;font-weight:700}
+button.stop{border-color:#e4596a;color:#ff9a9a}
+button:disabled{opacity:.4;cursor:not-allowed}
+input{font:inherit;padding:8px 11px;border:1px solid var(--line);border-radius:8px;
+  background:var(--bg);color:var(--ink);width:220px}
+main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:20px;padding:24px;text-align:center}
+.pill{font-size:13px;color:var(--muted)}
+.join{display:flex;gap:40px;align-items:center;flex-wrap:wrap;justify-content:center}
+#qr{background:#fff;padding:14px;border-radius:14px;line-height:0}
+.url{font-size:22px;font-weight:700;word-break:break-all;max-width:11ch}
+.big{font-size:64px;font-weight:800;letter-spacing:-.02em;line-height:1}
+.q{font-size:clamp(22px,3.4vw,40px);font-weight:700;max-width:22ch;line-height:1.35;text-wrap:balance}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:min(900px,92vw)}
+.opt{position:relative;border-radius:12px;padding:16px 16px 16px 46px;text-align:left;
+  font-size:clamp(15px,1.7vw,21px);font-weight:600;color:#fff;min-height:84px;
+  display:flex;align-items:center}
+.opt .n{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:24px;height:24px;
+  border-radius:7px;background:rgba(0,0,0,.22);display:flex;align-items:center;justify-content:center;font-size:13px}
+.opt.o0{background:var(--c0)}.opt.o1{background:var(--c1)}.opt.o2{background:var(--c2)}.opt.o3{background:var(--c3)}
+.opt.right{outline:4px solid #fff}
+.opt .cnt{position:absolute;right:14px;bottom:10px;font-size:14px;font-weight:800}
+.opt .fill{position:absolute;left:0;bottom:0;height:5px;background:rgba(255,255,255,.85);border-radius:0 3px 3px 0;transition:width .4s}
+.tim{font-size:46px;font-weight:800;font-variant-numeric:tabular-nums}
+.prog{width:min(900px,92vw);height:10px;border-radius:5px;background:var(--line);overflow:hidden}
+.prog i{display:block;height:100%;background:linear-gradient(90deg,#ffd93d,#ff8a3d,#e4382c);transition:width .3s linear}
+.board{width:min(680px,92vw);display:flex;flex-direction:column;gap:8px}
+.row{display:flex;gap:14px;align-items:center;background:var(--panel);border:1px solid var(--line);
+  border-radius:10px;padding:11px 16px;font-size:17px}
+.row.t{font-weight:800;font-size:19px}
+.row .r{width:38px}
+.row .s{margin-left:auto;font-variant-numeric:tabular-nums}
+.msg{color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+<div class="bar">
+  <h1>오늘의 퀴즈 · 진행 화면</h1>
+  <span class="pill" id="st">관리 코드를 넣어 주십시오</span>
+  <span class="sp">
+    <input id="key" type="password" placeholder="관리 코드" autocomplete="off">
+    <button id="save">확인</button>
+    <button id="start" class="go" hidden>시작</button>
+    <button id="stop" class="stop" hidden>멈춤</button>
+  </span>
+</div>
+<main id="m"><div class="msg">관리 코드를 넣으면 퀴즈 상태가 보입니다.</div></main>
+
+<script>
+var API = (new URLSearchParams(location.search).get("api")) ||
+          ("https://lecture-agent-culture-api.vercel.app").replace(/\/$/, "");
+var KEY = "";
+try { KEY = sessionStorage.getItem("quizKey") || ""; } catch (e) {}
+var STUDENT = location.origin + location.pathname.replace(/host\.html$/, "");
+var $ = function (s) { return document.querySelector(s); };
+var esc = function (s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); };
+var last = null, qr = null;
+
+if (KEY) $("#key").value = KEY;
+$("#save").onclick = function () {
+  KEY = $("#key").value.trim();
+  try { sessionStorage.setItem("quizKey", KEY); } catch (e) {}
+  tick();
+};
+$("#start").onclick = function () {
+  if (!confirm("퀴즈를 시작합니다. 학생 화면에 바로 뜹니다. 계속할까요?")) return;
+  send("start");
+};
+$("#stop").onclick = function () {
+  if (!confirm("퀴즈를 멈춥니다. 학생 화면에서 사라집니다.")) return;
+  send("stop");
+};
+function send(act) {
+  fetch(API + "/api/quiz", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ act: act, key: KEY }) })
+    .then(function (r) { return r.json(); })
+    .then(function () { tick(); })
+    .catch(function () {});
+}
+
+function qrInto(box) {
+  box.innerHTML = "";
+  qr = new QRCode(box, { text: STUDENT, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.M });
+}
+
+function draw(s) {
+  var m = $("#m");
+  $("#start").hidden = !(s.phase === "idle" || s.phase === "done");
+  $("#stop").hidden = !(s.phase === "ask" || s.phase === "reveal");
+  $("#st").textContent = s.phase === "none" ? "올린 퀴즈가 없습니다"
+    : (s.title || "") + " · " + (s.phase === "idle" ? "대기 중" :
+       s.phase === "done" ? "끝남" : (s.idx + 1) + "/" + s.n + " 문제");
+
+  if (s.phase === "none") { m.innerHTML = '<div class="msg">퀴즈를 먼저 올려 주십시오. <br>quiz_run.ps1 -Set</div>'; return; }
+
+  if (s.phase === "idle") {
+    m.innerHTML = '<div class="pill">학생은 아래 주소나 QR로 들어옵니다</div>' +
+      '<div class="join"><div id="qr"></div>' +
+      '<div><div class="url">' + esc(STUDENT.replace(/^https?:\/\//, "")) + '</div>' +
+      '<div class="big" style="margin-top:14px">' + (s.players || 0) + '</div>' +
+      '<div class="pill">명 참여 중</div></div></div>' +
+      '<div class="msg">「시작」을 누르면 모든 화면이 동시에 1번 문제로 갑니다.</div>';
+    qrInto($("#qr"));
+    return;
+  }
+
+  if (s.phase === "ask") {
+    var d = (s.dist && s.dist.d) || [0, 0, 0, 0];
+    var tot = Math.max(1, s.answered || 0);
+    m.innerHTML = '<div class="tim">' + s.left + '</div>' +
+      '<div class="prog"><i style="width:' + (100 * s.left / s.secs).toFixed(1) + '%"></i></div>' +
+      '<div class="q">' + esc(s.q.q) + "</div>" +
+      '<div class="grid">' + s.q.a.map(function (a, i) {
+        return '<div class="opt o' + i + '"><span class="n">' + (i + 1) + "</span>" + esc(a) +
+          '<span class="cnt">' + (d[i] || 0) + "</span>" +
+          '<span class="fill" style="width:' + (100 * (d[i] || 0) / tot).toFixed(1) + '%"></span></div>';
+      }).join("") + "</div>" +
+      '<div class="pill">' + (s.answered || 0) + " / " + (s.players || 0) + "명 답했습니다</div>";
+    return;
+  }
+
+  // reveal · done
+  var d2 = (s.dist && s.dist.d) || [0, 0, 0, 0];
+  var tot2 = Math.max(1, d2.reduce(function (a, b) { return a + b; }, 0));
+  m.innerHTML =
+    (s.phase === "done" ? '<div class="big">최종 순위</div>' :
+      '<div class="q">' + esc(s.q.q) + "</div>" +
+      '<div class="grid">' + s.q.a.map(function (a, i) {
+        return '<div class="opt o' + i + (i === s.q.c ? " right" : "") + '"><span class="n">' +
+          (i + 1) + "</span>" + esc(a) + '<span class="cnt">' + (d2[i] || 0) + "명</span>" +
+          '<span class="fill" style="width:' + (100 * (d2[i] || 0) / tot2).toFixed(1) + '%"></span></div>';
+      }).join("") + "</div>") +
+    '<div class="board">' + (s.board || []).slice(0, 8).map(function (x) {
+      return '<div class="row' + (x.r <= 3 ? " t" : "") + '"><span class="r">' +
+        (x.r <= 3 ? ["🥇", "🥈", "🥉"][x.r - 1] : x.r) + "</span><span>" + esc(x.nick) +
+        "</span><span class=\"s\">" + x.s + "점</span></div>";
+    }).join("") + "</div>" +
+    '<div class="pill">' + (s.players || 0) + "명 참여" +
+    (s.phase === "reveal" ? " · " + s.left + "초 뒤 다음 문제" : "") + "</div>";
+}
+
+function tick() {
+  if (!API) { $("#st").textContent = "API 주소를 찾지 못했습니다 (?api= 로 주십시오)"; return; }
+  var u = API + "/api/quiz" + (KEY ? "?key=" + encodeURIComponent(KEY) : "");
+  fetch(u, { cache: "no-store" }).then(function (r) { return r.json(); })
+    .then(function (s) { last = s; draw(s); }).catch(function () {});
+}
+tick();
+setInterval(tick, 1000);
+</script>
+</body>
+</html>
