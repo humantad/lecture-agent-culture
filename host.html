@@ -219,8 +219,9 @@ function optsHtml(q, d, tot, right) {
   var opts = (t === "ox") ? ["O", "X"] : (q.a || []);
   return '<div class="grid' + (t === "ox" ? " two" : "") + '">' + opts.map(function (a, i) {
     var cls = "opt o" + i + (right < 0 ? "" : (i === right ? " right" : " dim"));
+    // 정답을 밝히기 전에는 보기별 인원을 보여 주지 않는다 — 눈치로 고르는 일이 없게
     return '<div class="' + cls + '"><span class="n">' + (i + 1) + '</span>' + esc(a) +
-      '<span class="cnt">' + (d[i] || 0) + (right < 0 ? '' : '명') + '</span>' +
+      (right < 0 ? '' : '<span class="cnt">' + (d[i] || 0) + '명</span>') +
       '</div>';
   }).join("") + '</div>';
 }
