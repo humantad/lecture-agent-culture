@@ -51,7 +51,6 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 .plain.big2{font-size:clamp(24px,3.2vw,38px);font-weight:800}
 .hint{font-weight:800;letter-spacing:.22em;color:var(--accent)}
 .opt .cnt{position:absolute;right:14px;bottom:10px;font-size:14px;font-weight:800}
-.opt .fill{position:absolute;left:0;bottom:0;height:5px;background:rgba(255,255,255,.85);border-radius:0 3px 3px 0;transition:width .4s}
 .tim{font-size:46px;font-weight:800;font-variant-numeric:tabular-nums}
 .prog{width:min(900px,92vw);height:10px;border-radius:5px;background:var(--line);overflow:hidden}
 .prog i{display:block;height:100%;background:linear-gradient(90deg,#ffd93d,#ff8a3d,#e4382c);transition:width .3s linear}
@@ -222,7 +221,7 @@ function optsHtml(q, d, tot, right) {
     var cls = "opt o" + i + (right < 0 ? "" : (i === right ? " right" : " dim"));
     return '<div class="' + cls + '"><span class="n">' + (i + 1) + '</span>' + esc(a) +
       '<span class="cnt">' + (d[i] || 0) + (right < 0 ? '' : '명') + '</span>' +
-      '<span class="fill" style="width:' + (100 * (d[i] || 0) / tot).toFixed(1) + '%"></span></div>';
+      '</div>';
   }).join("") + '</div>';
 }
 
