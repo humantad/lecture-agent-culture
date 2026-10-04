@@ -73,6 +73,8 @@
       "  border-radius:6px;background:rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;font-size:12px}",
       ".qzo.c0{background:#00a99d}.qzo.c1{background:#2f80ed}.qzo.c2{background:#f0a44a}.qzo.c3{background:#e4596a}",
       ".qzo[disabled]{cursor:default;opacity:.55}",
+      ".qzo.off{opacity:.78}",
+      ".qzo.mine{outline:3px solid var(--ink,#1f2328);outline-offset:-3px}",
       ".qzo.right{outline:3px solid #15181f;opacity:1}",
       ".qzo.mine::after{content:'내 선택';position:absolute;right:10px;top:8px;font-size:11px;font-weight:700;opacity:.95}",
       ".qzo .cnt{position:absolute;right:10px;bottom:8px;font-size:12px;font-weight:700;opacity:.95}",
@@ -136,7 +138,7 @@
   }
 
   function answer(v) {
-    if (picked >= 0 || !state || state.phase !== "ask") return;
+    if (!state || state.phase !== "ask") return;      // 시간 안에는 몇 번이든 바꿀 수 있다
     picked = (typeof v === "number") ? v : 0;
     beep("pick");
     draw();
@@ -252,10 +254,10 @@
       } else {
         var opts = (t === "ox") ? ["O", "X"] : s.q.a;
         body += '<div class="qzopts' + (t === "ox" ? " ox" : "") + '">' + opts.map(function (a, i) {
-          return '<button class="qzo c' + i + (i === picked ? " mine" : "") + '" data-i="' + i + '"' +
-            (picked >= 0 ? " disabled" : "") + '><span class="n">' + (i + 1) + '</span>' + esc(a) + '</button>';
+          return '<button class="qzo c' + i + (i === picked ? " mine" : " off") + '" data-i="' + i + '">' +
+            '<span class="n">' + (i + 1) + '</span>' + esc(a) + '</button>';
         }).join('') + '</div>';
-        if (picked >= 0) body += '<div class="qzmsg">\ub2f5\uc744 \ubcf4\ub0c8\uc2b5\ub2c8\ub2e4.</div>';
+        if (picked >= 0) body += '<div class="qzmsg">고른 답 \u00b7 <b>' + (picked + 1) + '번</b> \u00b7 시간 안에는 다시 고를 수 있습니다.</div>';
       }
       body += '<div class="qzmsg">' + (s.answered || 0) + ' / ' + (s.players || 0) + '\uba85 \ub2f5\ud588\uc2b5\ub2c8\ub2e4</div>';
     } else {
@@ -266,9 +268,19 @@
         '<div class="face">' + (okk === null ? "·" : (okk ? face("ok") : face("bad"))) + '</div>' +
         '<div class="word">' + (okk === null ? '답을 내지 않으셨습니다'
           : (okk ? '맞았습니다!' : '아쉽습니다')) + '</div>' +
-        (s.me ? '<div class="sub">내 점수 ' + s.me.s + '점</div>' : '') +
-        '</div>' +
-        '<div class="qzmsg">다음 문제를 기다려 주십시오.</div>';
+        (s.me ? '<div class="sub">내 점수 ' + s.me.s + '점' +
+          (s.phase === "done" ? ' \u00b7 ' + s.me.r + '등' : '') + '</div>' : '') +
+        '</div>';
+      if (s.phase === "done" && s.me && s.me.r <= 3) {
+        body += sidDone
+          ? '<div class="qzwin"><b>' + MEDAL[s.me.r - 1] + ' ' + s.me.r + '등</b> \u00b7 학번을 받았습니다. 가산점 처리는 교수님이 하십니다.</div>'
+          : '<div class="qzwin"><b>' + MEDAL[s.me.r - 1] + ' ' + s.me.r + '등입니다!</b> 가산점을 받으려면 학번을 적어 주십시오.' +
+            '<div class="qzjoin"><input id="qzWin" inputmode="numeric" maxlength="10" placeholder="학번" autocomplete="off">' +
+            '<button id="qzWinGo">보내기</button></div>' +
+            '<div class="qzmsg" id="qzWinMsg">학번은 교수님만 봅니다. 순위표에는 나오지 않습니다.</div></div>';
+      } else if (s.phase !== "done") {
+        body += '<div class="qzmsg">다음 문제를 기다려 주십시오.</div>';
+      }
     }
     if (!put(head + body)) return;
     var mu = document.getElementById("qzMute");

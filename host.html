@@ -42,6 +42,8 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
   border-radius:7px;background:rgba(0,0,0,.22);display:flex;align-items:center;justify-content:center;font-size:13px}
 .opt.o0{background:var(--c0)}.opt.o1{background:var(--c1)}.opt.o2{background:var(--c2)}.opt.o3{background:var(--c3)}
 .opt.right{outline:4px solid #fff}
+.opt.dim{opacity:.38;filter:saturate(.5)}
+.opt.dim .cnt,.opt.dim .n{opacity:.9}
 .opt .cnt{position:absolute;right:14px;bottom:10px;font-size:14px;font-weight:800}
 .opt .fill{position:absolute;left:0;bottom:0;height:5px;background:rgba(255,255,255,.85);border-radius:0 3px 3px 0;transition:width .4s}
 .tim{font-size:46px;font-weight:800;font-variant-numeric:tabular-nums}
@@ -96,7 +98,6 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 </div>
 <main id="m"><div class="msg">관리 코드를 넣으면 퀴즈 상태가 보입니다.</div></main>
 <div class="foot" id="foot" hidden>
-  <button id="endq">종료</button>
   <button id="nextq" class="go">다음</button>
 </div>
 
@@ -187,7 +188,6 @@ $("#stop").onclick = function () {
   if (!confirm("퀴즈를 멈춥니다. 학생 화면에서 사라집니다.")) return;
   send("stop");
 };
-$("#endq").onclick = function () { send("end"); };
 $("#nextq").onclick = function () { send("next"); };
 function send(act) {
   fetch(API + "/api/quiz", { method: "POST", headers: { "Content-Type": "application/json" },
@@ -210,11 +210,12 @@ function draw(s) {
   $("#start").hidden = !(s.phase === "idle" || s.phase === "done");
   $("#stop").hidden = !run;
   $("#foot").hidden = !run;
-  $("#endq").disabled = (s.phase !== "ask");
-  $("#endq").textContent = (s.phase === "ask") ? "종료" : "정답 공개 중";
-  $("#nextq").textContent = (s.phase === "rank")
-    ? ((s.idx + 1 >= s.n) ? "결과 보기" : "다음 문제")
-    : "순위 보기";
+  var isLast = (s.idx + 1 >= s.n);
+  $("#nextq").textContent =
+    (s.phase === "ask") ? "다음"
+    : (s.phase === "reveal") ? (isLast ? "최종 순위" : "순위 보기")
+    : (s.phase === "rank") ? (isLast ? "최종 순위" : "다음 문제")
+    : "다음";
   if (!keyOK) return;                       // 코드가 확인되기 전에는 머리글을 건드리지 않는다
   var pn = { ask: "푸는 중", reveal: "정답 공개", rank: "순위" }[s.phase] || "";
   $("#st").textContent = s.phase === "none" ? "관리 코드 확인됨 · 올린 퀴즈가 없습니다"
@@ -262,13 +263,12 @@ function draw(s) {
   // 순위 화면 — 그 문항까지의 1~5위
   if (s.phase === "rank") {
     m.innerHTML = '<div class="big">' + (s.idx + 1) + '번 문제까지 순위</div>' +
-      '<div class="rank">' + (s.board || []).slice(0, 5).map(function (x) {
+      '<div class="rank">' + (s.board || []).slice(0, 8).map(function (x) {
         return '<div class="row t' + (x.r <= 3 ? x.r : 0) + '"><span class="r">' +
           (x.r <= 3 ? ["🥇", "🥈", "🥉"][x.r - 1] : x.r) + '</span><span>' + esc(x.nick) +
           '</span><span class="s">' + x.s + '점</span></div>';
       }).join("") + '</div>' +
-      '<div class="pill">' + (s.players || 0) + '명 참여 · 아래 「' +
-      (s.idx + 1 >= s.n ? '결과 보기' : '다음 문제') + '」를 누르십시오</div>';
+      '<div class="pill">' + (s.players || 0) + '명 참여 · 아래 단추로 넘기십시오</div>';
     return;
   }
 
@@ -289,11 +289,11 @@ function draw(s) {
   var tot2 = Math.max(1, d2.reduce(function (a, b) { return a + b; }, 0));
   m.innerHTML = '<div class="q">' + esc(s.q.q) + '</div>' +
     '<div class="grid">' + s.q.a.map(function (a, i) {
-      return '<div class="opt o' + i + (i === s.q.c ? " right" : "") + '"><span class="n">' +
+      return '<div class="opt o' + i + (i === s.q.c ? " right" : " dim") + '"><span class="n">' +
         (i + 1) + '</span>' + esc(a) + '<span class="cnt">' + (d2[i] || 0) + '명</span>' +
         '<span class="fill" style="width:' + (100 * (d2[i] || 0) / tot2).toFixed(1) + '%"></span></div>';
     }).join("") + '</div>' +
-    '<div class="pill">' + (s.players || 0) + '명 참여 · 아래 「순위 보기」를 누르십시오</div>';
+    '<div class="pill">' + (s.players || 0) + '명 참여 · 아래 단추로 넘기십시오</div>';
 }
 
 function tick() {
