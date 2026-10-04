@@ -177,6 +177,7 @@
       ".qzres .word{font-size:21px;font-weight:700;margin-top:6px}",
       ".qzres .sub{font-size:14px;opacity:.95;margin-top:4px}",
       ".qzwin{margin-top:12px;padding:12px 14px;border-radius:10px;",
+      ".qzwin.done2{border-color:#00a99d;background:#e2f3ea;color:#0b6b52;font-weight:700;text-align:center}",
       "  border:1px solid var(--accent,#3d5a80);background:var(--me,#e8eef6);font-size:14px}"
     ].join("\n");
     document.head.appendChild(s);
@@ -267,7 +268,7 @@
       '</div>';
     if (win) {
       h += sidDone
-        ? '<div class="qzwin">학번을 받았습니다. 가산점 처리는 교수님이 하십니다.</div>'
+        ? '<div class="qzwin done2">완료했습니다 · 학번이 교수님께 전달됐습니다.</div>'
         : '<div class="qzwin">가산점을 받으려면 학번을 적어 주십시오.' +
           '<div class="qzjoin"><input id="qzWin" inputmode="numeric" maxlength="10" placeholder="학번" autocomplete="off">' +
           '<button id="qzWinGo">보내기</button></div>' +
@@ -366,7 +367,7 @@
         '</div>';
       if (s.phase === "done" && s.me && s.me.r <= 3) {
         body += sidDone
-          ? '<div class="qzwin"><b>' + MEDAL[s.me.r - 1] + ' ' + s.me.r + '등</b> \u00b7 학번을 받았습니다. 가산점 처리는 교수님이 하십니다.</div>'
+          ? '<div class="qzwin done2">완료했습니다 · 학번이 교수님께 전달됐습니다.</div>'
           : '<div class="qzwin"><b>' + MEDAL[s.me.r - 1] + ' ' + s.me.r + '등입니다!</b> 가산점을 받으려면 학번을 적어 주십시오.' +
             '<div class="qzjoin"><input id="qzWin" inputmode="numeric" maxlength="10" placeholder="학번" autocomplete="off">' +
             '<button id="qzWinGo">보내기</button></div>' +
@@ -406,10 +407,14 @@
       var m = document.getElementById("qzWinMsg");
       if (v.length < 6) { m.textContent = "\ud559\ubc88\uc740 \uc22b\uc790 6\uc790\ub9ac \uc774\uc0c1\uc785\ub2c8\ub2e4."; return; }
       wg.disabled = true;
+      m.textContent = "보내는 중…";
       post({ act: "sid", sid: v }).then(function (r) {
         wg.disabled = false;
-        if (r && r.ok) { sidDone = true; draw(); }
-        else m.textContent = (r && r.detail) || "\ubcf4\ub0b4\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4.";
+        if (r && r.ok) { sidDone = true; lastHtml = ""; draw(); }
+        else m.textContent = "보내지 못했습니다 · " + ((r && r.detail) || "알 수 없는 까닭");
+      }).catch(function () {
+        wg.disabled = false;
+        m.textContent = "서버에 닿지 못했습니다. 다시 눌러 주십시오.";
       });
     };
     var clr = document.getElementById("qzClr");
