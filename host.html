@@ -116,6 +116,10 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 .btnlink{display:inline-block;margin-top:6px;padding:7px 14px;border-radius:8px;border:1px solid #bbb;text-decoration:none;color:#222;background:#f6f6f6}
 .btnlink.go{background:#2e6bd8;border-color:#2e6bd8;color:#fff}
 .histrow{text-align:left;cursor:pointer;font:inherit}
+.cqr{position:fixed;right:18px;bottom:84px;z-index:5;background:#fff;color:#141821;border-radius:12px;
+  padding:8px 8px 6px;text-align:center;box-shadow:0 4px 18px rgba(0,0,0,.35)}
+.cqr #cqrBox{line-height:0}.cqr b{display:block;font-size:15px;margin-top:4px;letter-spacing:.06em}
+.cqr small{display:block;font-size:10.5px;color:#555}
 .hbt{border-collapse:collapse;width:100%;margin-top:6px;background:#fff;color:#222}.hbt td,.hbt th{border:1px solid #ddd;padding:5px 8px;text-align:left}
 </style>
 </head>
@@ -135,6 +139,7 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
   </span>
 </div>
 <main id="m"><div class="msg">관리 코드를 넣으면 퀴즈 상태가 보입니다.</div></main>
+<div class="cqr" id="cqr" hidden><div id="cqrBox"></div><small>늦게 온 사람은 여기로</small><b id="cqrPin"></b></div>
 <div class="foot" id="foot" hidden>
   <button id="nextq" class="go">다음</button>
 </div>
@@ -357,9 +362,19 @@ function qrInto(box, pin) {
   qr = new QRCode(box, { text: url, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.M });
 }
 
+var cqrPin = null;
+function cornerQR(show, pin) {   // 퀴즈가 시작된 뒤에도 구석에 QR 을 남겨 늦게 온 학생이 들어오게
+  $("#cqr").hidden = !show;
+  if (!show || pin === cqrPin) return;
+  cqrPin = pin; var box = $("#cqrBox"); box.innerHTML = "";
+  try { new QRCode(box, { text: STUDENT + (pin ? "#quiz=" + encodeURIComponent(pin) : ""), width: 120, height: 120, correctLevel: QRCode.CorrectLevel.M }); } catch (e) {}
+  $("#cqrPin").textContent = pin ? "PIN " + pin : "";
+}
+
 function draw(s) {
   var m = $("#m");
   var run = (s.phase === "ask" || s.phase === "reveal" || s.phase === "rank");
+  cornerQR(run && keyOK, s.pin || "");
   $("#close").hidden = !(s.phase === "idle" || s.phase === "done");
   $("#start").hidden = !(s.phase === "idle" || s.phase === "done");
   $("#stop").hidden = !run;
