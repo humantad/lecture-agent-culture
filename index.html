@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>철학으로 읽는 사회와 문화 · 학습 도우미</title>
 <script src="vendor/vis-network.min.js"></script>
-<script src="avatar.js?v=1791324489"></script>
-<script src="quiz.js?v=1791324489" defer></script>
+<script src="avatar.js?v=1791349403"></script>
+<script src="quiz.js?v=1791349403" defer></script>
 <style>
 :root{
   --bg:#f6f5f2; --panel:#ffffff; --ink:#1f2328; --muted:#646b73; --line:#e3e0da;
@@ -523,6 +523,7 @@ function avatarFor(week){
 // 아바타 대화창에 예시 질문 단추 — 누르면 바로 묻는다
 function avatarExamples(id){
   const log=$("#avLog"); if(!log||!avatar) return;
+  log.querySelectorAll(".av-ex").forEach(x=>x.remove()); // 같은 학자로 절·주차를 옮길 때마다 목록이 쌓이지 않게
   const ex=(examples()[id]||examples().null||[]).slice(0,3); if(!ex.length) return;
   const d=document.createElement("div"); d.className="av-ex";
   d.innerHTML=`<b>이렇게 물어보세요</b>`+ex.map(e=>`<button type="button">${esc(e)}</button>`).join("");
