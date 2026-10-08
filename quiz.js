@@ -15,7 +15,7 @@
   })();
 
   var box, state = null, joined = false, picked = -1, lastIdx = -1, timer = null, joinedQid = "";
-  var order = [], myText = "", myNick = "", lastPhase = "", sound = true, sidDone = false;
+  var order = [], myText = "", myNick = "", lastPhase = "", sound = true, sidDone = false, full = false;
   // 수뭉이 — 상명대 마스코트. 화면마다 다른 표정을 쓴다.
   var MASCOT = (window.PHILO_STATIC ? "mascot/" : "/static/mascot/");
   var SM = {
@@ -93,6 +93,21 @@
       '<path d="M20 126c40-6 70 6 100 2s64-12 100-4" fill="none" stroke="#2f80ed" stroke-width="3" stroke-linecap="round" opacity=".55"/>' +
       '</svg>';
   }
+
+  // 퀴즈만 크게 보기 — 띠를 화면 가득 덮개로 키우고, 되면 브라우저 전체 화면까지(아이폰 사파리는 덮개만)
+  function setFull(on) {
+    full = !!on;
+    box.classList.toggle("full", full);
+    document.documentElement.classList.toggle("qzlock", full);
+    try {
+      if (full && !document.fullscreenElement && box.requestFullscreen) box.requestFullscreen().catch(function () {});
+      if (!full && document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function () {});
+    } catch (e) {}
+    lastHtml = ""; draw();
+  }
+  document.addEventListener("fullscreenchange", function () {   // Esc 로 나가면 덮개도 걷는다
+    if (full && !document.fullscreenElement) { full = false; box.classList.remove("full"); document.documentElement.classList.remove("qzlock"); lastHtml = ""; draw(); }
+  });
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
@@ -178,7 +193,20 @@
       ".qzres .sub{font-size:14px;opacity:.95;margin-top:4px}",
       ".qzwin{margin-top:12px;padding:12px 14px;border-radius:10px;",
       ".qzwin.done2{border-color:#00a99d;background:#e2f3ea;color:#0b6b52;font-weight:700;text-align:center}",
-      "  border:1px solid var(--accent,#3d5a80);background:var(--me,#e8eef6);font-size:14px}"
+      "  border:1px solid var(--accent,#3d5a80);background:var(--me,#e8eef6);font-size:14px}",
+      // 퀴즈만 크게 — 학습 도우미를 덮고 퀴즈 띠만 화면 가득
+      "#quizBar.full{position:fixed;inset:0;z-index:9999;overflow:auto;padding:18px clamp(14px,5vw,64px) 28px;background:var(--bg,#f7f5f1)}",
+      "#quizBar.full .qzq{font-size:clamp(20px,3.2vw,34px)}",
+      "#quizBar.full .qzo{min-height:clamp(74px,14vh,140px);font-size:clamp(16px,2.2vw,24px)}",
+      "#quizBar.full .qzopts.ox .qzo{min-height:clamp(110px,26vh,220px);font-size:48px}",
+      "#quizBar.full .qz .sec{font-size:28px}",
+      "#quizBar.full .qzbar{height:12px}",
+      ".qzfull{border:1px solid var(--line,#e3e0da);background:transparent;border-radius:8px;font:inherit;font-size:12.5px;padding:3px 9px;cursor:pointer;color:inherit}",
+      "html.qzlock,html.qzlock body{overflow:hidden}",
+      ".qzrank{margin-top:14px;padding:20px 16px;border-radius:12px;text-align:center}",
+      ".qzrank.top{background:linear-gradient(160deg,#fff3cf,#ffe3a3);color:#4a3600}",
+      ".qzrank.low{background:linear-gradient(160deg,#e7eef7,#dbe6f3);color:#23334a}",
+      ".qzrank .big{font-size:22px;font-weight:800}.qzrank .sub{font-size:14.5px;margin-top:4px;opacity:.9}"
     ].join("\n");
     document.head.appendChild(s);
   }
@@ -280,8 +308,10 @@
 
   function draw() {
     var s = state;
-    if (!s || s.phase === "none") { box.hidden = true; box.removeAttribute("data-form"); return; }
-    if (s.qid && closedQid === s.qid) { box.hidden = true; return; }   // 학생이 닫은 퀴즈
+    if (!s || s.phase === "none" || (s.qid && closedQid === s.qid)) {   // 없는 퀴즈 · 학생이 닫은 퀴즈
+      if (full) setFull(false);
+      box.hidden = true; if (!s || s.phase === "none") box.removeAttribute("data-form"); return;
+    }
     box.hidden = false;
 
     if (s.phase !== "idle") box.removeAttribute("data-form");
@@ -318,6 +348,7 @@
       '<span class="meta">' + (s.phase === "done" ? "끝났습니다" :
         (s.idx + 1) + " / " + s.n + " 문제") +
       (s.players ? " · " + s.players + "명 참여" : "") + '</span>' +
+      (joined && s.phase !== "done" ? '<button class="qzfull" id="qzFull">' + (full ? "✕ 작게" : "⛶ 퀴즈만 크게") + '</button>' : '') +
       '<button class="qzmute" id="qzMute" title="\uc18c\ub9ac">' + (sound ? "\ud83d\udd0a" : "\ud83d\udd07") + '</button>' +
       (s.phase === "ask" ? '<span class="sec">' + s.left + '</span>' : "") + "</div>";
 
@@ -372,12 +403,22 @@
             '<div class="qzjoin"><input id="qzWin" inputmode="numeric" maxlength="10" placeholder="학번" autocomplete="off">' +
             '<button id="qzWinGo">보내기</button></div>' +
             '<div class="qzmsg" id="qzWinMsg">학번은 교수님만 봅니다. 순위표에는 나오지 않습니다.</div></div>';
+      } else if (s.phase === "rank" && s.me) {
+        // 중간 순위 — 1~3위는 축하, 나머지는 격려(남의 닉네임·순위표는 보이지 않는다)
+        body += s.me.r <= 3
+          ? '<div class="qzrank top">' + sm("win") + '<div class="big">' + MEDAL[s.me.r - 1] + ' 축하합니다! 높은 순위에 들었습니다</div>' +
+            '<div class="sub">지금 ' + s.me.r + '등 · ' + s.me.s + '점 · 끝까지 지켜 내십시오</div></div>'
+          : '<div class="qzrank low">' + sm("soft") + '<div class="big">아직 높은 순위에는 들지 못했습니다</div>' +
+            '<div class="sub">지금 ' + s.me.r + '등 · ' + s.me.s + '점 · 다음 문제에서 따라잡을 수 있습니다</div></div>';
+        body += '<div class="qzmsg">다음 문제를 기다려 주십시오.</div>';
       } else if (s.phase !== "done") {
         body += '<div class="qzmsg">다음 문제를 기다려 주십시오.</div>';
       }
       }
     }
     if (!put(head + body)) return;
+    var fb = document.getElementById("qzFull");
+    if (fb) fb.onclick = function () { setFull(!full); };
     var mu = document.getElementById("qzMute");
     if (mu) mu.onclick = function () {
       sound = !sound;
@@ -399,6 +440,7 @@
     if (cl) cl.onclick = function () {
       closedQid = (state && state.qid) || "";
       try { localStorage.setItem("quiz-closed", closedQid); } catch (e) {}
+      if (full) setFull(false);
       box.hidden = true;
     };
     var wg = document.getElementById("qzWinGo");
