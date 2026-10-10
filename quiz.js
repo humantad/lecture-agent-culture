@@ -516,8 +516,22 @@
       .catch(function () {});
   }
 
+  // 묻는 간격(2026-10-10) — 열어 둔 탭마다 1초씩 묻느라 Upstash 무료 한도를 넘겼다.
+  // 퀴즈가 돌 때만 1초로 묻고, 화면을 가린 탭은 묻지 않는다.
+  function gap() {
+    var p = state && state.phase;
+    if (p === "ask" || p === "reveal" || p === "rank") return 1000;
+    if (p === "idle") return 3000;
+    return 20000;                                   // 퀴즈 없음 · 끝남
+  }
+  function loop() {
+    clearTimeout(timer);
+    if (document.hidden) return;                    // 다시 보이면 visibilitychange 가 깨운다
+    tick();
+    timer = setTimeout(loop, gap());
+  }
   mount();
-  tick();
-  timer = setInterval(tick, 1000);
-  window.addEventListener("pagehide", function () { clearInterval(timer); });
+  loop();
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) loop(); });
+  window.addEventListener("pagehide", function () { clearTimeout(timer); });
 })();
