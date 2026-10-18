@@ -1,480 +1,986 @@
 <!doctype html>
+
 <html lang="ko">
+
 <head>
+
 <meta charset="utf-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <title>오늘의 퀴즈 · 진행 화면</title>
+
 <script src="vendor/qrcode.min.js"></script>
+
 <style>
+
 :root{
+
   --bg:#141821; --panel:#1d2330; --ink:#f1f4f9; --muted:#9aa4b4; --line:#2b3340;
+
   --accent:#6ea8fe; --c0:#00a99d; --c1:#2f80ed; --c2:#f0a44a; --c3:#e4596a;
+
   color-scheme:dark;
+
 }
+
 *{box-sizing:border-box}
+
 html,body{height:100%}
+
 body{margin:0;background:var(--bg);color:var(--ink);
+
   font-family:"IBM Plex Sans KR",system-ui,-apple-system,"Malgun Gothic",sans-serif;
+
   display:flex;flex-direction:column}
+
 .bar{display:flex;align-items:center;gap:14px;padding:12px 24px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+
 .bar h1{font-size:16px;margin:0;font-weight:700}
+
 .bar .sp{margin-left:auto;display:flex;gap:8px;align-items:center}
+
 button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel);
+
   color:var(--ink);border-radius:8px;padding:8px 16px}
+
 button.go{background:var(--accent);border-color:var(--accent);color:#0d1016;font-weight:700}
+
 button.stop{border-color:#e4596a;color:#ff9a9a}
+
 button:disabled{opacity:.4;cursor:not-allowed}
+
 input{font:inherit;padding:8px 11px;border:1px solid var(--line);border-radius:8px;
+
   background:var(--bg);color:var(--ink);width:220px}
+
 main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+
   gap:20px;padding:24px;text-align:center}
+
 .pill{font-size:13px;color:var(--muted)}
+
 .join{display:flex;gap:40px;align-items:center;flex-wrap:wrap;justify-content:center}
+
 #qr{background:#fff;padding:14px;border-radius:14px;line-height:0}
+
 .url{font-size:22px;font-weight:700;word-break:break-all;max-width:11ch}
+
 .big{font-size:64px;font-weight:800;letter-spacing:-.02em;line-height:1}
+
 .q{font-size:clamp(22px,3.4vw,40px);font-weight:700;max-width:22ch;line-height:1.35;text-wrap:balance}
+
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:min(900px,92vw)}
+
 .opt{position:relative;border-radius:12px;padding:16px 16px 16px 46px;text-align:left;
+
   font-size:clamp(15px,1.7vw,21px);font-weight:600;color:#fff;min-height:84px;
+
   display:flex;align-items:center}
+
 .opt .n{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:24px;height:24px;
+
   border-radius:7px;background:rgba(0,0,0,.22);display:flex;align-items:center;justify-content:center;font-size:13px}
+
 .opt.o0{background:var(--c0)}.opt.o1{background:var(--c1)}.opt.o2{background:var(--c2)}.opt.o3{background:var(--c3)}
+
 .opt.right{outline:4px solid #fff}
+
 .opt.dim{opacity:.3;filter:grayscale(.85) brightness(.8)}
+
 .opt.dim .cnt{opacity:1;font-weight:800}
+
 .opt.right{box-shadow:0 0 0 4px #fff,0 0 26px rgba(255,255,255,.35)}
+
 .grid.two{grid-template-columns:1fr 1fr}
+
 .grid.two .opt{min-height:120px;font-size:30px;font-weight:800;justify-content:center;padding-left:16px}
+
 .plain{font-size:clamp(18px,2.4vw,26px);color:var(--ink);max-width:22ch;line-height:1.5}
+
 .plain.big2{font-size:clamp(24px,3.2vw,38px);font-weight:800}
+
 .hint{font-weight:800;letter-spacing:.22em;color:var(--accent)}
+
 .opt .cnt small{font-size:.8em;opacity:.85;font-weight:600}
+
 .rank .row.good{border-color:#4e7c5c;background:#22302a}
+
 .rank .row.miss{opacity:.6}
+
 .rank .row .s small{font-size:.8em;opacity:.85}
+
 .rank .row em.sid{font-style:normal;font-size:12px;color:#7ee2a8;margin-left:10px}
+
 .rank .row em.wait{font-style:normal;font-size:12px;color:var(--muted);margin-left:10px}
+
 .ord{display:flex;flex-direction:column;gap:8px;width:min(760px,92vw)}
+
 .oi{position:relative;padding:12px 16px 12px 46px;border-radius:11px;color:#fff;font-size:18px;font-weight:600;text-align:left}
+
 .oi .n{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:7px;
+
   background:rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;font-size:13px}
+
 .oi.k0{background:#00a99d}.oi.k1{background:#2f80ed}.oi.k2{background:#f0a44a}
+
 .oi.k3{background:#e4596a}.oi.k4{background:#8e6fd8}.oi.k5{background:#4a9d5b}
+
 .artbig{max-width:360px;margin:0 auto}
+
 .smoong{display:block;margin:0 auto 6px;width:120px;height:auto}
+
 .smoong.big{width:180px}
+
 .head2{display:flex;align-items:center;gap:18px;justify-content:center;flex-wrap:wrap}
+
 .head2 .smoong{width:96px;margin:0}
+
 .head2.fin .smoong{width:220px}
+
 .head2.fin .ttl2{font-size:38px}
+
 .head2.fin .bye2{font-size:19px}
+
 .ttl2{font-size:28px;font-weight:800;letter-spacing:-.01em;text-align:left}
+
 .bye2{font-size:16px;color:var(--muted);margin-top:2px;text-align:left}
+
 .artbig svg{width:100%;height:auto;display:block}
+
 .opt .cnt{position:absolute;right:14px;bottom:10px;font-size:14px;font-weight:800}
+
 .tim{font-size:46px;font-weight:800;font-variant-numeric:tabular-nums}
+
 .prog{width:min(900px,92vw);height:10px;border-radius:5px;background:var(--line);overflow:hidden}
+
 .prog i{display:block;height:100%;background:linear-gradient(90deg,#ffd93d,#ff8a3d,#e4382c);transition:width .3s linear}
+
 .board{width:min(680px,92vw);display:flex;flex-direction:column;gap:8px}
+
 .row{display:flex;gap:14px;align-items:center;background:var(--panel);border:1px solid var(--line);
+
   border-radius:10px;padding:11px 16px;font-size:17px}
+
 .row.t{font-weight:800;font-size:19px}
+
 .row .r{width:38px}
+
 .row .s{margin-left:auto;font-variant-numeric:tabular-nums}
+
 .msg{color:var(--muted);font-size:14px}
+
 .foot{display:flex;gap:10px;justify-content:center;padding:14px 24px;border-top:1px solid var(--line)}
+
 .foot button{padding:12px 30px;font-size:16px;font-weight:600}
+
 .rank{width:min(760px,94vw);display:flex;flex-direction:column;gap:10px}
+
 .rank .row{font-size:20px;padding:14px 20px}
+
 .rank .row.t1{background:#2b3a2f;border-color:#4e7c5c}
+
 .rank .row.t2{background:#2b3240}
+
 .rank .row.t3{background:#3a3228}
+
 .ok{color:#7ee2a8}.no{color:#ff9a9a}
+
 .sheet{width:min(760px,94vw);background:var(--panel);border:1px solid var(--line);
+
   border-radius:12px;padding:18px;text-align:left}
+
 .sheet textarea{width:100%;height:240px;font-family:ui-monospace,monospace;font-size:12.5px;
+
   background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:11px}
+
 .sheet .row2{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+
 .sheet h2{font-size:15px;margin:0 0 8px}
+
 .weeks{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-top:12px}
+
 .wk{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;
+
   padding:13px 15px;border:1px solid var(--line);border-radius:11px;background:var(--bg);
+
   color:var(--ink);cursor:pointer;transition:background .12s,border-color .12s,transform .08s}
+
 .wk:hover{background:var(--panel);border-color:var(--accent);transform:translateY(-1px)}
+
 .wk:active{transform:none}
+
 .wk b{font-size:15px}
+
 .wk span{font-size:12.5px;color:var(--muted);line-height:1.35}
+
 .wk em{font-style:normal;font-size:11.5px;color:var(--accent);font-weight:700}
+
 .wk.empty{opacity:.45;cursor:not-allowed}
+
 .wk.empty:hover{background:var(--bg);border-color:var(--line);transform:none}
+
 .wk.empty em{color:var(--muted)}
+
 .decklist{display:grid;gap:10px;margin-top:10px}
+
 .deck{border:1px solid #ddd;border-radius:10px;padding:10px 12px;background:#fff;color:#222}
+
 .deck small{color:#777}
+
 .btnlink{display:inline-block;margin-top:6px;padding:7px 14px;border-radius:8px;border:1px solid #bbb;text-decoration:none;color:#222;background:#f6f6f6}
+
 .btnlink.go{background:#2e6bd8;border-color:#2e6bd8;color:#fff}
+
 .histrow{text-align:left;cursor:pointer;font:inherit}
+
 .cqr{position:fixed;right:18px;bottom:84px;z-index:5;background:#fff;color:#141821;border-radius:12px;
+
   padding:8px 8px 6px;text-align:center;box-shadow:0 4px 18px rgba(0,0,0,.35)}
+
 .cqr #cqrBox{line-height:0}.cqr b{display:block;font-size:15px;margin-top:4px;letter-spacing:.06em}
+
 .cqr small{display:block;font-size:10.5px;color:#555}
+
 .hbt{border-collapse:collapse;width:100%;margin-top:6px;background:#fff;color:#222}.hbt td,.hbt th{border:1px solid #ddd;padding:5px 8px;text-align:left}
+
 </style>
+
 </head>
+
 <body>
+
 <div class="bar">
+
   <h1>오늘의 퀴즈 · 진행 화면</h1>
+
   <span class="pill" id="st">관리 코드를 넣어 주십시오</span>
+
   <span class="sp">
+
     <input id="key" type="password" placeholder="관리 코드" autocomplete="off">
+
     <button id="save">확인</button>
+
     <button id="load" hidden>퀴즈 올리기</button>
+
     <button id="decks" hidden>강의자료</button>
+
     <button id="hist" hidden>지난 기록</button>
+
     <button id="start" class="go" hidden>시작</button>
+
     <button id="stop" class="stop" hidden>멈춤</button>
+
     <button id="close" class="stop" hidden>퀴즈 끝내기</button>
+
   </span>
+
 </div>
+
 <main id="m"><div class="msg">관리 코드를 넣으면 퀴즈 상태가 보입니다.</div></main>
+
 <div class="cqr" id="cqr" hidden><div id="cqrBox"></div><small>늦게 온 사람은 여기로</small><b id="cqrPin"></b></div>
+
 <div class="foot" id="foot" hidden>
+
   <button id="nextq" class="go">다음</button>
+
 </div>
+
+
 
 <script>window.PHILO_DECKS=[{"week": 2, "title": "문화와 문명의 전통 — 아놀드, 리비스, 엘리아스", "file": "W02_문화와문명 (1).pptx", "drive": "1rCGUyuUHUONTjV7Jxa6SjVElu5AjMX6k"}, {"week": 3, "title": "문화주의 — 호가트, 윌리엄스", "file": "W03_문화주의(보완).pptx", "drive": "130WMDeYy71qCP-LncOn5so8pnrShDfqq"}, {"week": 4, "title": "마르크스주의의 문화적 이해 — 마르크스, 그람시, 알튀세, 프랑크푸르트학파", "file": "W04_마르크스주의_v02.pptx", "drive": "1_U6RzphTqtdpdaR4jPMfrKux2XYCcWf-"}, {"week": 5, "title": "정신분석과 문화 이해 — 프로이트, 융", "file": "W05_정신분석_v02.pptx", "drive": "1sHU3zBjviur7SvZ5EoZ_93nni2p1k4Z7"}];window.PHILO_QUIZ=[{"w": "W01", "t": "대중문화의 이해", "pin": "0101"}, {"w": "W02", "t": "문화와 문명", "pin": "0202"}, {"w": "W03", "t": "문화주의", "pin": "0303"}, {"w": "W04", "t": "마르크스주의", "pin": "4204", "secs": 25, "qs": [{"t": "choice", "q": "그람시의 '헤게모니(Hegemony)'와 사회 구조에 대한 설명으로 올바르지 않은 것은?", "a": ["헤게모니는 자발적 동의를 이끌어내는 과정이다.", "헤게모니의 주 영역은 강제적인 정치사회다.", "대중문화는 양 계급의 타협적 평형 상태다.", "자본주의 유지는 강제와 동의의 결합이 필수다."], "c": 2}, {"t": "choice", "q": "그람시가 분류한 지식인의 개념에 대한 설명 중 가장 적절한 것은?", "a": ["전통적 지식인은 신흥 계급 이익을 대변한다.", "지식인 기능을 수행하는 이가 유기적 지식인이다.", "유기적 지식인은 과거부터 이어진 독립 집단이다.", "헤게모니 장악을 위해 전통적 지식인을 배제한다."], "c": 1}, {"t": "choice", "q": "알튀세르의 문제설정(Problematic)과 징후적 독해(Symptomatic reading)에 대한 설명으로 가장 적절한 것은?", "a": ["문제설정은 텍스트가 묻고 답할 한계를 규정한다.", "징후적 독해는 텍스트의 표면적 의미만 분석한다.", "문제설정은 열린 체계로 모든 질문에 답할 수 있다.", "징후적 독해는 독자의 주관적 감정을 바탕으로 한다."], "c": 0}, {"t": "choice", "q": "전통적 마르크스주의의 기계적 결정론을 극복하기 위한 그람시와 알튀세르의 이론적 기여에 대한 설명으로 가장 적절한 것은?", "a": ["알튀세르는 경제주의를 전적으로 옹호했다.", "그람시는 상부구조의 자율성을 완전히 부인했다.", "두 학자 모두 상부구조의 자율성을 강조했다.", "알튀세르는 주체의 자유로운 능동성을 중시했다."], "c": 3}, {"t": "choice", "q": "아도르노·호르크하이머의 문화산업론에 대한 설명으로 가장 적절한 것은?", "a": ["대중문화는 대중이 자발적으로 만들어낸 산물이다.", "문화산업은 표준화와 유사 개성화를 통해 체제 순응을 유도한다.", "기술 복제는 예술의 민주화를 가져온다고 주장하였다.", "대중의 능동적 해석 능력을 높이 평가하였다."], "c": 1}]}, {"w": "W05", "t": "정신분석과 문화 이해", "pin": "5205", "secs": 20, "qs": [{"t": "choice", "q": "프로이드가 말한 인류의 자기애에 가해진 세 번째 타격의 뜻은?", "a": ["인간은 우주의 중심이 아니다", "인간은 생물의 중심이 아니다", "자아는 제 집의 주인이 아니다", "문명은 진보하지 않는다"], "c": 2}, {"t": "choice", "q": "『문명 속의 불만』이 본 문명의 성격으로 가장 적절한 것은?", "a": ["행복을 늘려 가는 진보", "안전과 행복의 가능성을 맞바꾼 거래", "충동을 완전히 없앤 질서", "개인의 자유가 커지는 과정"], "c": 1}, {"t": "choice", "q": "융의 원형 중 인정하기 싫은 특질로, 의식하지 않으면 밖으로 투사되어 편견·갈등이 되는 것은?", "a": ["페르소나", "그림자", "아니마 · 아니무스", "자기(Selbst)"], "c": 1}, {"t": "initial", "q": "초자아는 무엇의 상속자인가?", "hint": "ㅇㅇㄷㅍㅅ ㅋㅍㄹㅅ", "ans": ["오이디푸스 콤플렉스", "오이디푸스콤플렉스", "오이디푸스"], "secs": 30}], "_note": "2026-10-06 — W05_정신분석_v02 끝 Quiz 4장(45~48)과 같은 문항"}, {"w": "W06", "t": "구조주의", "pin": "0606"}, {"w": "W07", "t": "후기구조주의", "pin": "0707"}, {"w": "W10", "t": "포스트모더니즘", "pin": "1010"}, {"w": "W11", "t": "자본주의와 소비", "pin": "1111"}, {"w": "W12", "t": "섹슈얼리티와 젠더", "pin": "1212"}, {"w": "W15", "t": "영화 분석", "pin": "1515"}];window.PHILO_CLASSES=[];</script><script>
+
 var API = (new URLSearchParams(location.search).get("api")) ||
+
           ("https://lecture-agent-culture-api.vercel.app").replace(/\/$/, "");
+
 var KEY = "";
+
 try { KEY = sessionStorage.getItem("quizKey") || ""; } catch (e) {}
+
 var STUDENT = location.origin + location.pathname.replace(/host\.html$/, "");
+
 var $ = function (s) { return document.querySelector(s); };
+
 var esc = function (s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); };
+
 var last = null, qr = null;
+
 var BANK = window.PHILO_QUIZ || []; // 과목별 퀴즈 목록 — data/course/<과목>/quiz_bank.json(export_static이 넣는다)
 
+
+
 if (KEY) $("#key").value = KEY;
+
 var keyOK = false;
+
 function checkKey() {
+
   if (!KEY) { $("#st").innerHTML = '<span class="no">관리 코드를 넣어 주십시오</span>'; return Promise.resolve(false); }
+
   $("#st").textContent = "확인 중…";
+
   return fetch(API + "/api/quiz?check=1&key=" + encodeURIComponent(KEY), { cache: "no-store" })
+
     .then(function (r) {
+
       keyOK = r.status === 200;
+
       $("#st").innerHTML = keyOK ? '<span class="ok">관리 코드 확인됨</span>'
+
         : '<span class="no">관리 코드가 맞지 않습니다 (' + r.status + ')</span>';
+
       $("#load").hidden = !keyOK; $("#hist").hidden = !keyOK; $("#decks").hidden = !keyOK || !(window.PHILO_DECKS || []).length;
+
       if (keyOK) tick();
+
       return keyOK;
+
     })
+
     .catch(function () {
+
       $("#st").innerHTML = '<span class="no">서버에 닿지 못했습니다 (네트워크·CORS)</span>';
+
       return false;
+
     });
+
 }
+
+
 
 // 강의자료 — 실제 수업 덱(pptx) 원본을 Google Drive에서 연다/내려받는다(2026-10-04).
+
 // 파일은 교수 계정 소유·비공유라 링크가 보여도 그 계정으로 로그인해야만 열린다. 애니메이션은 PowerPoint로 열면 그대로.
+
 $("#decks").onclick = function () {
+
   var D = window.PHILO_DECKS || [];
+
   $("#m").innerHTML = '<div class="sheet"><h2>강의자료 (수업 덱 원본)</h2>' +
+
     '<p class="msg">교수 계정(Google)으로 로그인한 브라우저에서만 열립니다. 내려받아 PowerPoint로 열면 애니메이션까지 그대로 진행됩니다.</p>' +
+
     '<div class="decklist">' + D.map(function (d) {
+
       return '<div class="deck"><b>' + d.week + '주</b> <span>' + esc(d.title) + '</span><br><small>' + esc(d.file) + '</small><div class="row2">' +
+
         '<a class="btnlink go" href="https://drive.google.com/uc?export=download&id=' + encodeURIComponent(d.drive) + '">내려받기</a> ' +
+
         '<a class="btnlink" target="_blank" rel="noopener" href="https://drive.google.com/file/d/' + encodeURIComponent(d.drive) + '/view">미리 보기</a></div></div>';
+
     }).join("") + '</div></div>';
+
 };
+
+
 
 // 지난 기록 — 분반별로 나눠 보고, 한 판을 누르면 순위표(학번 포함)
+
 $("#hist").onclick = function () {
+
   $("#m").innerHTML = '<div class="sheet"><h2>지난 퀴즈 기록</h2><div class="msg">불러오는 중…</div></div>';
+
   fetch(API + "/api/quiz?view=hist&key=" + encodeURIComponent(KEY), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
+
     var items = j.items || [], groups = {};
+
     items.forEach(function (it) { var g = it.cls || "분반 표시 없음"; (groups[g] = groups[g] || []).push(it); });
+
     var keys = (window.PHILO_CLASSES || []).filter(function (c) { return groups[c]; }).concat(Object.keys(groups).filter(function (g) { return (window.PHILO_CLASSES || []).indexOf(g) < 0; }));
+
     $("#m").innerHTML = '<div class="sheet"><h2>지난 퀴즈 기록</h2>' + (items.length ? keys.map(function (g) {
+
       return '<h3>' + esc(g) + '</h3><div class="decklist">' + groups[g].map(function (it) {
+
         return '<button class="deck histrow" data-q="' + esc(it.qid) + '"><b>' + esc(it.title) + '</b><br><small>' + new Date(it.t).toLocaleString("ko-KR") + ' · ' + it.n + '문항</small></button>'; }).join("") + '</div>';
+
     }).join("") : '<div class="msg">아직 올린 퀴즈가 없습니다.</div>') + '<div id="hb"></div></div>';
+
     Array.prototype.forEach.call(document.querySelectorAll(".histrow"), function (b) { b.onclick = function () { showBoard(b.dataset.q); }; });
+
   }).catch(function () { $("#m").innerHTML = '<div class="msg">기록을 불러오지 못했습니다.</div>'; });
+
 };
+
 function showBoard(qid) {
+
   $("#hb").innerHTML = '<div class="msg">순위표 불러오는 중…</div>';
+
   fetch(API + "/api/quiz?view=board&qid=" + encodeURIComponent(qid) + "&key=" + encodeURIComponent(KEY), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
+
     var b = j.board || [];
+
     $("#hb").innerHTML = '<h3>' + esc(j.title || qid) + ' · 참가 ' + (j.players || 0) + '명</h3>' + (b.length ? '<table class="hbt"><tr><th>순위</th><th>닉네임</th><th>학번</th><th>점수</th></tr>' +
+
       b.map(function (x, i) { return '<tr><td>' + (i + 1) + '</td><td>' + esc(x.nick || "") + '</td><td>' + esc(x.sid || "") + '</td><td>' + esc(x.s) + '</td></tr>'; }).join("") + '</table>' : '<div class="msg">' + esc(j.detail || "기록이 없습니다") + '</div>');
+
     $("#hb").scrollIntoView({ behavior: "smooth" });
+
   });
+
 }
+
+
 
 $("#save").onclick = function () {
+
   KEY = $("#key").value.trim();
+
   try { sessionStorage.setItem("quizKey", KEY); } catch (e) {}
+
   checkKey();
+
 };
+
+
 
 function weekList() {
+
   return '<div class="sheet"><h2>퀴즈 고르기</h2>' +
+
     '<div class="msg">주차를 고르면 그 퀴즈가 편집창에 채워집니다.</div>' +
+
     '<div class="weeks">' + BANK.map(function (b, i) {
+
       return '<button class="wk' + (b.qs ? '' : ' empty') + '" data-i="' + i + '"' +
+
         (b.qs ? '' : ' disabled') + '><b>' + esc(b.w) + '</b><span>' + esc(b.t) + '</span>' +
+
         '<em>' + (b.qs ? b.qs.length + '문항' : '아직 없음') + '</em></button>';
+
     }).join('') + '</div></div>';
+
 }
+
+
 
 $("#load").onclick = function () {
+
   $("#m").innerHTML = weekList();
+
   Array.prototype.forEach.call(document.querySelectorAll(".wk:not([disabled])"), function (b) {
+
     b.onclick = function () { openEditor(BANK[+b.dataset.i]); };
+
   });
+
 };
+
+
 
 function openEditor(bank) {
+
   $("#m").innerHTML = '<div class="sheet"><h2>퀴즈 올리기</h2>' +
+
     '<div class="msg">아래 내용을 고쳐 「올리기」를 누르십시오. 올려도 시작되지는 않습니다. ' + 'PIN은 그날 과목마다 정해지므로 적지 않으셔도 됩니다.</div>' +
+
     '<textarea id="qjson"></textarea>' +
+
     '<div class="row2"><button class="go" id="put">올리기</button>' +
+
     '<button id="cancel">취소</button><span class="msg" id="pmsg"></span></div></div>';
+
   var CLS = window.PHILO_CLASSES || [];
+
   if (CLS.length) $("#qjson").insertAdjacentHTML("beforebegin", '<div class="row2"><b>분반</b> ' + CLS.map(function (c, i) {
+
     return '<label><input type="radio" name="cls" value="' + esc(c) + '"' + (i ? '' : ' checked') + '> ' + esc(c) + '</label>'; }).join(' ') +
+
     ' <span class="msg">기록이 분반별로 나뉩니다</span></div>');
+
   $("#qjson").value = JSON.stringify(
+
     { title: bank.t, secs: bank.secs || 25, reveal: 7, qs: bank.qs }, null, 1);
+
   $("#cancel").onclick = $("#load").onclick;
+
   $("#put").onclick = function () {
+
     var q;
+
     try { q = JSON.parse($("#qjson").value); }
+
     catch (e) { $("#pmsg").innerHTML = '<span class="no">형식이 잘못됐습니다</span>'; return; }
+
     q.act = "set"; q.key = KEY;
+
     var ck = document.querySelector('input[name="cls"]:checked');
+
     if (ck) { q.cls = ck.value; q.title = "[" + ck.value + "] " + String(q.title || "").replace(/^\[[^\]]*\]\s*/, "");
+
       q.qid = (bank.w || "q") + "-" + ck.value.replace(/[^0-9A-Za-z]/g, "") + "-" + Date.now().toString(36); }
+
     fetch(API + "/api/quiz", { method: "POST", headers: { "Content-Type": "application/json" },
+
       body: JSON.stringify(q) })
+
       .then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }); })
+
       .then(function (x) {
+
         if (x.s !== 200) { $("#pmsg").innerHTML = '<span class="no">' + esc(x.j.detail || "올리지 못했습니다") + "</span>"; return; }
+
         $("#pmsg").innerHTML = '<span class="ok">올렸습니다 · ' + x.j.qs.length + "문항 · PIN " + x.j.pin + "</span>";
+
         setTimeout(tick, 900);
+
       })
+
       .catch(function () { $("#pmsg").innerHTML = '<span class="no">보내지 못했습니다</span>'; });
+
   };
+
 };
+
 $("#start").onclick = function () {
+
   if (!confirm("퀴즈를 시작합니다. 학생 화면에 바로 뜹니다. 계속할까요?")) return;
+
   send("start");
+
 };
+
 $("#close").onclick = function () {
+
   if (!confirm("퀴즈를 끝냅니다. 학생 화면에서 퀴즈 띠가 사라집니다. 계속할까요?")) return;
+
   fetch(API + "/api/quiz", { method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ act: "live", on: false, key: KEY }) })
+
+    body: JSON.stringify({ act: "close", key: KEY }) })
+
     .then(function () { tick(); }).catch(function () {});
+
 };
+
 $("#stop").onclick = function () {
+
   if (!confirm("퀴즈를 멈춥니다. 학생 화면에서 사라집니다.")) return;
+
   send("stop");
+
 };
+
 $("#nextq").onclick = function () { send("next"); };
+
 function send(act) {
+
   fetch(API + "/api/quiz", { method: "POST", headers: { "Content-Type": "application/json" },
+
     body: JSON.stringify({ act: act, key: KEY }) })
+
     .then(function (r) { return r.json(); })
+
     .then(function () { tick(); })
+
     .catch(function () {});
+
 }
+
+
 
 // 보기를 그린다 — 선택형·OX 는 네 칸, 단답·초성은 정답 글자, 순서는 차례
+
 // right 가 -1 이면 아직 정답을 밝히지 않는 단계다.
+
 var MASCOT = "mascot/";
+
 function sm(file, cls) {
+
   return '<img class="smoong ' + (cls || "") + '" alt="" src="' + MASCOT + file + '">';
+
 }
+
+
 
 function artBye() {
+
   return '<svg viewBox="0 0 260 150" role="img" aria-label="손 흔드는 인사와 책">' +
+
     '<g stroke="#6ea8fe" stroke-width="3" fill="none" stroke-linecap="round">' +
+
     '<path d="M60 118h140"/><path d="M78 118V86l52-18 52 18v32"/>' +
+
     '<path d="M104 118V96h24v22"/></g>' +
+
     '<g stroke="#f6c343" stroke-width="3" stroke-linecap="round">' +
+
     '<path d="M196 54l10-10M208 70h12M190 36l4-12"/></g>' +
+
     '<circle cx="130" cy="44" r="14" fill="#f6c343"/>' +
+
     '<g stroke="#00a99d" stroke-width="3" fill="none" stroke-linecap="round">' +
+
     '<path d="M40 60c10-8 22-8 32 0M40 76c10-8 22-8 32 0"/></g>' +
+
     '</svg>';
+
 }
+
+
 
 function pct(n, tot) {
+
   return tot ? ' <small>' + Math.round(100 * n / tot) + '%</small>' : '';
+
 }
+
+
 
 // 보기를 그린다. open=false 면 아직 정답을 밝히지 않은 단계다.
+
 function optsHtml(q, d, tot, open, texts) {
+
   var t = q.t || "choice";
+
   if (t === "short" || t === "initial") {
+
     if (!open) return '<div class="plain">학생이 답을 적고 있습니다</div>';
+
     var all = (texts || []).reduce(function (a, x) { return a + x.n; }, 0);
+
     return '<div class="plain big2">정답 · ' + esc((q.ans || []).join(" / ")) + '</div>' +
+
       '<div class="rank">' + (texts || []).map(function (x) {
+
         return '<div class="row ' + (x.ok ? "good" : "miss") + '"><span class="r">' +
+
           (x.ok ? "O" : "X") + '</span><span>' + esc(x.v || "(빈 답)") + '</span>' +
+
           '<span class="s">' + x.n + '명' + pct(x.n, all) + '</span></div>';
+
       }).join("") + '</div>';
+
   }
+
   if (t === "order") {
+
     if (!open) {
+
       return '<div class="ord">' + (q.a || []).map(function (a, i) {
+
         return '<div class="oi k' + (i % 6) + '"><span class="n">?</span>' + esc(a) + '</div>';
+
       }).join("") + '</div>';
+
     }
+
     var all2 = (texts || []).reduce(function (a, x) { return a + x.n; }, 0);
+
     return '<div class="ord">' + (q.c || []).map(function (ci, n) {
+
       return '<div class="oi k' + (ci % 6) + '"><span class="n">' + (n + 1) + '</span>' + esc(q.a[ci]) + '</div>';
+
     }).join("") + '</div>' +
+
       '<div class="rank">' + (texts || []).slice(0, 5).map(function (x) {
+
         var seq = String(x.v).split("-").map(function (i) { return (+i) + 1; }).join(" → ");
+
         return '<div class="row ' + (x.ok ? "good" : "miss") + '"><span class="r">' +
+
           (x.ok ? "O" : "X") + '</span><span>' + esc(seq) + '</span>' +
+
           '<span class="s">' + x.n + '명' + pct(x.n, all2) + '</span></div>';
+
       }).join("") + '</div>';
+
   }
+
   var opts = (t === "ox") ? ["O", "X"] : (q.a || []);
+
   var all3 = d.reduce(function (a, b) { return a + b; }, 0);
+
   return '<div class="grid' + (t === "ox" ? " two" : "") + '">' + opts.map(function (a, i) {
+
     var cls = "opt o" + i + (!open ? "" : (i === q.c ? " right" : " dim"));
+
     // 정답을 밝히기 전에는 보기별 인원을 보여 주지 않는다 — 눈치로 고르는 일이 없게
+
     return '<div class="' + cls + '"><span class="n">' + (i + 1) + '</span>' + esc(a) +
+
       (!open ? '' : '<span class="cnt">' + (d[i] || 0) + '명' + pct(d[i] || 0, all3) + '</span>') +
+
       '</div>';
+
   }).join("") + '</div>';
+
 }
+
+
 
 function qrInto(box, pin) {
+
   box.innerHTML = "";
+
   // QR 로 들어온 사람은 PIN 을 치지 않는다 — 주소에 실어 보낸다
+
   var url = STUDENT + (pin ? "#quiz=" + encodeURIComponent(pin) : "");
+
   qr = new QRCode(box, { text: url, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.M });
+
 }
+
+
 
 var cqrPin = null;
+
 function cornerQR(show, pin) {   // 퀴즈가 시작된 뒤에도 구석에 QR 을 남겨 늦게 온 학생이 들어오게
+
   $("#cqr").hidden = !show;
+
   if (!show || pin === cqrPin) return;
+
   cqrPin = pin; var box = $("#cqrBox"); box.innerHTML = "";
+
   try { new QRCode(box, { text: STUDENT + (pin ? "#quiz=" + encodeURIComponent(pin) : ""), width: 120, height: 120, correctLevel: QRCode.CorrectLevel.M }); } catch (e) {}
+
   $("#cqrPin").textContent = pin ? "PIN " + pin : "";
+
 }
+
+
 
 function draw(s) {
+
   var m = $("#m");
+
   var run = (s.phase === "ask" || s.phase === "reveal" || s.phase === "rank");
+
   cornerQR(run && keyOK, s.pin || "");
-  $("#close").hidden = !(s.phase === "idle" || s.phase === "done");
-  $("#start").hidden = !(s.phase === "idle" || s.phase === "done");
+
+  $("#close").hidden = !(s.phase === "idle" || s.phase === "done") || !!s.closed;
+
+  $("#start").hidden = !(s.phase === "idle" || s.phase === "done") || !!s.closed;
+
   $("#stop").hidden = !run;
+
   $("#foot").hidden = !run;
+
   var isLast = (s.idx + 1 >= s.n);
+
   $("#nextq").textContent =
+
     (s.phase === "ask") ? "다음"
+
     : (s.phase === "reveal") ? (isLast ? "최종 순위" : "순위 보기")
+
     : (s.phase === "rank") ? (isLast ? "최종 순위" : "다음 문제")
+
     : "다음";
+
   if (!keyOK) return;                       // 코드가 확인되기 전에는 머리글을 건드리지 않는다
+
   var pn = { ask: "푸는 중", reveal: "정답 공개", rank: "순위" }[s.phase] || "";
+
   $("#st").textContent = s.phase === "none" ? "관리 코드 확인됨 · 올린 퀴즈가 없습니다"
+
     : (s.title || "") + " · " + (s.phase === "idle" ? "대기 중" :
+
        s.phase === "done" ? "끝남" : (s.idx + 1) + "/" + s.n + " 문제 · " + pn);
 
+
+
   if (s.phase === "none") {
+
     m.innerHTML = keyOK
+
       ? '<div class="big">올린 퀴즈가 없습니다</div>' +
+
         '<button class="go" id="load2" style="font-size:18px;padding:14px 32px">퀴즈 올리기</button>' +
+
         '<div class="msg">다섯 유형이 들어간 보기 퀴즈가 채워져 나옵니다. 고쳐서 올리십시오.</div>'
+
       : '<div class="msg">관리 코드를 먼저 넣어 주십시오.</div>';
+
     var l2 = document.getElementById("load2");
+
     if (l2) l2.onclick = function () { $("#load").click(); };
+
     return;
+
   }
+
+
+
+  // 「퀴즈 끝내기」를 누른 퀴즈 — 다시 열지 않는다(2026-10-18, 끝낸 뒤에도 QR 화면이 학생 띠를 다시 열던 문제)
+
+  if (s.phase === "idle" && s.closed) {
+
+    m.innerHTML = '<div class="big">퀴즈를 끝냈습니다</div>' +
+
+      '<div class="msg">학생 화면에는 보이지 않습니다. 받은 답과 순위는 지난 기록에 남아 있습니다.</div>' +
+
+      '<div style="display:flex;gap:10px;justify-content:center;margin-top:14px">' +
+
+      '<button class="go" id="reopen" style="font-size:16px;padding:12px 24px">이 퀴즈 다시 열기</button>' +
+
+      '<button class="go" id="load3" style="font-size:16px;padding:12px 24px">새 퀴즈 올리기</button></div>';
+
+    document.getElementById("reopen").onclick = function () { send("live"); };
+
+    document.getElementById("load3").onclick = function () { $("#load").click(); };
+
+    return;
+
+  }
+
+
 
   if (s.phase === "idle") {
-    if (!s.live) send("live");           // QR 을 띄우는 순간 학생 띠가 열린다
+
+    // QR 을 띄우는 순간 학생 띠가 열린다. 다른 날 올린 퀴즈면 오늘 날짜·PIN 으로 다시 연다
+
+    if (!s.live || s.today === false) send("live");
+
     m.innerHTML = '<div class="pill">학생은 아래 주소나 QR로 들어옵니다</div>' +
+
       '<div class="join"><div id="qr"></div>' +
+
       '<div><div class="url">' + esc(STUDENT.replace(/^https?:\/\//, "")) + '</div>' +
+
       '<div class="pill" style="margin-top:12px">PIN</div><div class="big">' + esc(s.pin || "----") + '</div>' +
+
       '<div class="pill" style="margin-top:12px">참여</div>' +
+
       '<div class="big">' + (s.players || 0) + '</div></div></div>' +
+
       '<div class="msg">「시작」을 누르면 모든 화면이 동시에 1번 문제로 갑니다.</div>';
+
     qrInto($("#qr"), s.pin);
+
     return;
+
   }
+
+
 
   if (s.phase === "ask") {
+
     var d = (s.dist && s.dist.d) || [0, 0, 0, 0];
+
     var tot = Math.max(1, s.answered || 0);
+
     m.innerHTML = '<div class="tim">' + s.left + '</div>' +
+
       '<div class="prog"><i style="width:' + (100 * s.left / s.secs).toFixed(1) + '%"></i></div>' +
+
       '<div class="q">' + esc(s.q.q) +
+
       ((s.q.t === "initial" && s.q.hint) ? ' <span class="hint">' + esc(s.q.hint) + '</span>' : '') +
+
       "</div>" + optsHtml(s.q, d, tot, false, null) +
+
       '<div class="pill">' + (s.answered || 0) + " / " + (s.players || 0) + "명 답했습니다</div>";
+
     return;
+
   }
+
+
 
   // 순위 화면 — 그 문항까지의 1~5위
+
   if (s.phase === "rank") {
+
     m.innerHTML = '<div class="head2">' + sm("smoong_12.png") +
+
       '<div class="ttl2">' + (s.idx + 1) + '번 문제까지 순위</div></div>' +
+
       '<div class="rank">' + (s.board || []).slice(0, 8).map(function (x) {
+
         return '<div class="row t' + (x.r <= 3 ? x.r : 0) + '"><span class="r">' +
+
           (x.r <= 3 ? ["🥇", "🥈", "🥉"][x.r - 1] : x.r) + '</span><span>' + esc(x.nick) +
+
           '</span><span class="s">' + x.s + '점</span></div>';
+
       }).join("") + '</div>' +
+
       '<div class="pill">' + (s.players || 0) + '명 참여 · 아래 단추로 넘기십시오</div>';
+
     return;
+
   }
+
+
 
   // 끝 — 1·2·3위
+
   if (s.phase === "done") {
+
     var got = (s.board || []).filter(function (x) { return x.sid; }).length;
+
     m.innerHTML = '<div class="head2 fin">' + sm("smoong_13.png") +
+
       '<div><div class="ttl2">최종 순위</div>' +
+
       '<div class="bye2">수고하셨습니다</div></div></div>' +
+
       '<div class="rank">' + (s.board || []).slice(0, 3).map(function (x) {
+
         return '<div class="row t' + x.r + '"><span class="r">' +
+
           ["🥇", "🥈", "🥉"][x.r - 1] + '</span><span>' + esc(x.nick) +
+
           (x.sid ? '<em class="sid">학번 받음</em>'
+
                  : '<em class="wait">학번 기다리는 중…</em>') +
+
           '</span><span class="s">' + x.s + '점</span></div>';
+
       }).join("") + '</div>' +
+
       '<div class="pill">' + (s.players || 0) + '명 참여 · 학번 ' + got + '/3 들어옴</div>';
+
     return;
+
   }
 
+
+
   // 정답·통계 — 순위는 넣지 않는다
+
   var d2 = (s.dist && s.dist.d) || [0, 0, 0, 0];
+
   var tot2 = Math.max(1, d2.reduce(function (a, b) { return a + b; }, 0));
+
   m.innerHTML = '<div class="q">' + esc(s.q.q) +
+
     ((s.q.t === "initial" && s.q.hint) ? ' <span class="hint">' + esc(s.q.hint) + '</span>' : '') +
+
     '</div>' + optsHtml(s.q, d2, tot2, true, s.texts) +
+
     '<div class="pill">' + (s.players || 0) + '명 참여 · 아래 단추로 넘기십시오</div>';
+
 }
 
+
+
 function tick() {
+
   if (!API) { $("#st").textContent = "API 주소를 찾지 못했습니다 (?api= 로 주십시오)"; return; }
+
   var u = API + "/api/quiz" + (KEY ? "?key=" + encodeURIComponent(KEY) : "");
+
   fetch(u, { cache: "no-store" }).then(function (r) { return r.json(); })
+
     .then(function (s) { last = s; draw(s); }).catch(function () {});
+
 }
+
 if (KEY) checkKey(); else $("#st").innerHTML = '<span class="no">관리 코드를 넣어 주십시오</span>';
+
 tick();
+
 setInterval(function () { if (!document.querySelector(".sheet")) tick(); }, 1000);
+
 </script>
+
 </body>
+
 </html>
+
