@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>철학으로 읽는 사회와 문화 · 학습 도우미</title>
 <script src="vendor/vis-network.min.js"></script>
-<script src="avatar.js?v=1791618947"></script>
-<script src="quiz.js?v=1791618947" defer></script>
+<script src="avatar.js?v=1792293523"></script>
+<script src="quiz.js?v=1792293523" defer></script>
 <style>
 :root{
   --bg:#f6f5f2; --panel:#ffffff; --ink:#1f2328; --muted:#646b73; --line:#e3e0da;
@@ -40,6 +40,14 @@ h1{font-size:17px;margin:0 0 2px}
 .ph.on{background:var(--me);border-color:var(--accent)}
 .ph small{color:var(--muted);font-size:11.5px;white-space:nowrap}
 .ph[disabled]{opacity:.45;cursor:default}
+/* 중간고사 이전 범위 — 접힌 묶음은 흐리게, 누르면 펼침 */
+.fold{display:flex;justify-content:space-between;align-items:center;gap:6px;width:100%;padding:7px 9px;margin:6px 0 2px;border:1px dashed var(--line);border-radius:7px;background:transparent;color:var(--muted);cursor:pointer;font:inherit;font-size:13px;opacity:.75}
+.fold:hover{opacity:1;border-color:var(--accent);color:var(--ink)}
+.fold.open{opacity:1;border-style:solid}
+.fold small{font-size:11.5px;white-space:nowrap}
+.ph.pre{opacity:.72}
+.ph.pre:hover,.ph.pre.on{opacity:1}
+.pre-g{border-left:2px solid var(--line);padding-left:6px;margin-bottom:6px}
 .sec{font-size:13px;line-height:1.4}
 main{display:flex;flex-direction:column;min-width:0}
 .tabs{display:flex;gap:4px;padding:10px clamp(16px,4vw,48px) 0;border-bottom:1px solid var(--line);background:var(--panel)}
@@ -270,6 +278,8 @@ textarea{flex:1;resize:none;height:48px;padding:11px 12px;border:1px solid var(-
   .st-bar .st-print{padding:6px 10px;font-size:13px}
   #phbar .wk span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #phbar .wk b{font-size:13px}
+  #phbar .fold{padding:6px 12px;border-style:dashed;color:var(--muted);gap:6px}
+  #phbar .fold.open{border-style:solid}
   .tabs{overflow-x:auto;scrollbar-width:none}
   #phbar{border-bottom:0;padding-bottom:4px}
   #topcounts{display:flex;justify-content:flex-end;padding:6px 16px 0;background:var(--panel)}
@@ -403,27 +413,49 @@ const HYP={latent_relation:"잠재 관계",implicit_assumption:"숨은 가정",d
 
 // ---------- 공통 ----------
 const phName=id=>course.philosophers.find(p=>p.id===id)?.name;
+// 중간고사 이전 범위 접기(2026-10-18) — 중간고사 주차(course.midterm) 앞의 주차·인물은 접어 두고, 누르면 편다
+const preMid=w=>!!course?.midterm&&w<course.midterm;
+const prePh=p=>p.weeks.length>0&&p.weeks.every(preMid);
+const foldKey=()=>"philo-fold-"+(course?.id||"");
+let foldOpen=null;
+function isFoldOpen(){ if(foldOpen===null){ try{foldOpen=localStorage.getItem(foldKey())==="1";}catch(e){foldOpen=false;} } return foldOpen; }
+function foldBtn(weeks){
+  const ws=[...new Set(weeks)].sort((a,b)=>a-b), r=ws.length>1?`${ws[0]}~${ws.at(-1)}주`:`${ws[0]}주`, o=isFoldOpen();
+  return `<button type="button" class="fold ${o?"open":""}" aria-expanded="${o}" title="${o?"접기":"펼쳐 보기"}"><span>${o?"▾":"▸"} 중간고사 이전</span><small>${r}</small></button>`;
+}
+function wireFold(root){
+  root.querySelectorAll(".fold").forEach(b=>b.onclick=e=>{e.stopPropagation(); foldOpen=!isFoldOpen();
+    try{localStorage.setItem(foldKey(),foldOpen?"1":"0");}catch(e){}
+    if(course.philosophers.filter(p=>p.persona).length<2) renderWeekBar(); else renderPhs();
+    if(sections.length) renderSecs();});
+}
 // 주차 칩(인물이 하나뿐인 과목) — 누르면 그 주차 전체를 연다
 function renderWeekBar(){
   const ws=[...new Set(sections.map(x=>x.week))];
   const cur=curKey&&curKey!=="cmp"?+curKey.slice(1,3):null;
-  $("#phbar").innerHTML=ws.map(w=>{const t=(course.weeks.find(x=>x.week===w)?.title||"").split(/ — | \(/)[0];
-    return `<button class="ph wk ${w===cur?"on":""}" data-k="w${String(w).padStart(2,"0")}"><b>${w}주</b><span>${esc(t)}</span></button>`;}).join("");
+  const chip=w=>{const t=(course.weeks.find(x=>x.week===w)?.title||"").split(/ — | \(/)[0];
+    return `<button class="ph wk ${w===cur?"on":""} ${preMid(w)?"pre":""}" data-k="w${String(w).padStart(2,"0")}"><b>${w}주</b><span>${esc(t)}</span></button>`;};
+  const pre=ws.filter(preMid), post=ws.filter(w=>!preMid(w));
+  $("#phbar").innerHTML=(pre.length?foldBtn(pre)+(isFoldOpen()?pre.map(chip).join(""):""):"")+post.map(chip).join("");
   $("#phbar").querySelectorAll(".wk").forEach(b=>b.onclick=()=>goUnit(b.dataset.k));
+  wireFold($("#phbar"));
 }
 function goUnit(k){ if(tab!=="ana") $("#tabs").querySelector('[data-t="ana"]')?.click(); openUnit(k); }
 const face=id=>window.PhiloAvatarSVG?`<span class="ph-face">${PhiloAvatarSVG(id)}</span>`:"";
 function renderPhs(){
   const list=course.philosophers.filter(p=>p.persona);
-  $("#phs").innerHTML=list.map(p=>{
-    const dis=false;
+  // 인물이 여럿인 과목: 맡은 주차가 모두 중간고사 앞인 인물은 「중간고사 이전」 아래로 접는다
+  const multi=list.length>1, pre=multi?list.filter(prePh):[], post=list.filter(p=>!pre.includes(p));
+  const folded=row=>(pre.length?foldBtn(pre.flatMap(p=>p.weeks))+(isFoldOpen()?pre.map(row).join(""):""):"")+post.map(row).join("");
+  $("#phs").innerHTML=folded(p=>{
     const wk=p.weeks.length?p.weeks.join("·")+"주":"";
-    return `<button class="ph ${p.id===ph?"on":""}" data-id="${p.id??""}" ${dis?"disabled":""}><span class="ph-n">${face(p.id)}<span>${esc(p.name)}</span></span><small>${wk}</small></button>`;
-  }).join("");
+    return `<button class="ph ${p.id===ph?"on":""} ${pre.includes(p)?"pre":""}" data-id="${p.id??""}"><span class="ph-n">${face(p.id)}<span>${esc(p.name)}</span></span><small>${wk}</small></button>`;
+  });
   // 좁은 화면: 메뉴 없이 탭 아래 가로 칩 줄로 고른다. 인물별 과목은 인물 칩, 인물이 하나뿐인 과목(논비사·과철이)은 주차 칩
-  if(list.length>1) $("#phbar").innerHTML=(course.compare?`<button class="ph wk ${curKey==="cmp"?"on":""}" data-k="cmp">⚖ <span>비교</span></button>`:"")
-    +list.map(p=>`<button class="ph ${p.id===ph?"on":""}" data-id="${p.id??""}">${face(p.id)}<span>${esc(p.name)}</span><small>${p.weeks.join("·")}주</small></button>`).join("");
+  if(multi) $("#phbar").innerHTML=(course.compare?`<button class="ph wk ${curKey==="cmp"?"on":""}" data-k="cmp">⚖ <span>비교</span></button>`:"")
+    +folded(p=>`<button class="ph ${p.id===ph?"on":""} ${pre.includes(p)?"pre":""}" data-id="${p.id??""}">${face(p.id)}<span>${esc(p.name)}</span><small>${p.weeks.join("·")}주</small></button>`);
   else renderWeekBar();
+  wireFold($("#phs")); wireFold($("#phbar"));
   $("#phbar").querySelectorAll(".wk").forEach(b=>b.onclick=()=>goUnit(b.dataset.k));
   {const on=$("#phbar .on"); if(on) on.scrollIntoView({block:"nearest",inline:"center"});}
   document.querySelectorAll("#phs .ph,#phbar .ph").forEach(b=>b.onclick=()=>{ph=b.dataset.id||null;history=[];renderPhs();
@@ -493,19 +525,24 @@ async function loadSections(){
   if(!sections.length){const r=await (await api("/api/sections")).json(); sections=r.sections; canAnalyze=r.can_analyze;}
   renderSecs(); if(!curKey) openDefault();
 }
-function openDefault(){
-  const s=sections.find(x=>!ph||x.philosophers.includes(ph)); if(s) openUnit(`w${String(s.week).padStart(2,"0")}`);
+function openDefault(){ // 중간고사 뒤 범위가 있으면 그 첫 주차부터
+  const mine=sections.filter(x=>!ph||x.philosophers.includes(ph));
+  const s=mine.find(x=>!preMid(x.week))||mine[0]; if(s) openUnit(`w${String(s.week).padStart(2,"0")}`);
 }
 function renderSecs(){
   const list=sections.filter(s=>!ph||s.philosophers.includes(ph));
-  let wk=null, html=course.compare?`<button class="ph sec cmp ${curKey==="cmp"?"on":""}" data-k="cmp"><span><b>⚖ ${esc(phName(course.compare[0]))} ↔ ${esc(phName(course.compare[1]))}</b><br><small>같은 개념, 다른 설명</small></span></button>`:"";
+  let wk=null, pre="", post="", html=course.compare?`<button class="ph sec cmp ${curKey==="cmp"?"on":""}" data-k="cmp"><span><b>⚖ ${esc(phName(course.compare[0]))} ↔ ${esc(phName(course.compare[1]))}</b><br><small>같은 개념, 다른 설명</small></span></button>`:"";
   for(const s of list){
+    let h="";
     if(s.week!==wk){wk=s.week; const k=`w${String(wk).padStart(2,"0")}`;
-      html+=`<div class="label" style="margin-top:8px">${wk}주</div><button class="ph sec ${k===curKey?"on":""}" data-k="${k}"><span><b>${wk}주 전체</b></span><small></small></button>`;}
-    html+=`<button class="ph sec ${s.key===curKey?"on":""}" data-k="${s.key}"><span>${esc(s.title)}</span><small title="논증 분석 ${s.cached?"있음":"없음"}">${s.cached?"●":"○"}</small></button>`;
+      h+=`<div class="label" style="margin-top:8px">${wk}주</div><button class="ph sec ${k===curKey?"on":""}" data-k="${k}"><span><b>${wk}주 전체</b></span><small></small></button>`;}
+    h+=`<button class="ph sec ${s.key===curKey?"on":""}" data-k="${s.key}"><span>${esc(s.title)}</span><small title="논증 분석 ${s.cached?"있음":"없음"}">${s.cached?"●":"○"}</small></button>`;
+    if(preMid(s.week)) pre+=h; else post+=h;
   }
-  $("#secs").innerHTML=html;
+  if(pre) html+=foldBtn(list.filter(s=>preMid(s.week)).map(s=>s.week))+(isFoldOpen()?`<div class="pre-g">${pre}</div>`:"");
+  $("#secs").innerHTML=html+post;
   $("#secs").querySelectorAll(".ph").forEach(b=>b.onclick=()=>{openUnit(b.dataset.k);$("#side").classList.remove("open");});
+  wireFold($("#secs"));
 }
 let avatar=null;
 function avatarFor(week){
@@ -886,7 +923,7 @@ function renderSources(){
 
 // ---------- 시작 ----------
 api("/api/course").then(r=>r.json()).then(c=>{
-  course=c; ph=c.philosophers.find(p=>p.persona)?.id||null; $("#ctitle").textContent=c.title; document.title=`${c.title} · 학습 도우미`; $("#csub").textContent=`${c.semester} · 학습 도우미 · 이번 학기 슬라이드 기반`;
+  course=c; ph=(c.philosophers.find(p=>p.persona&&!prePh(p))||c.philosophers.find(p=>p.persona))?.id||null; $("#ctitle").textContent=c.title; document.title=`${c.title} · 학습 도우미`; $("#csub").textContent=`${c.semester} · 학습 도우미 · 이번 학기 슬라이드 기반`;
   $("#llm").textContent=STATIC?"":c.llm?"":"⚠ LLM 미연결 — 자료 검색과 저장된 분석만 동작";
   renderPhs(); welcome(); setTimeout(refreshCounts,1500); hit(location.hash.slice(1).split("/")[0]||"ana",true);
   if(STATIC){ $("#tabs").querySelector('[data-t="chat"]').remove(); if(!location.hash) location.hash="ana"; }
