@@ -552,7 +552,7 @@ $("#close").onclick = function () {
 
     body: JSON.stringify({ act: "close", key: KEY }) })
 
-    .then(function () { tick(); }).catch(function () {});
+    .then(function () { loop(); }).catch(function () {});
 
 };
 
@@ -574,7 +574,7 @@ function send(act) {
 
     .then(function (r) { return r.json(); })
 
-    .then(function () { tick(); })
+    .then(function () { loop(); })
 
     .catch(function () {});
 
@@ -976,7 +976,22 @@ if (KEY) checkKey(); else $("#st").innerHTML = '<span class="no">관리 코드�
 
 tick();
 
-setInterval(function () { if (!document.querySelector(".sheet")) tick(); }, 1000);
+// 묻는 간격(2026-10-28) — 학생 화면(quiz.js)과 같게. 진행 중만 1초, 가린 탭은 묻지 않는다.
+var timer;
+function gap() {
+  var p = last && last.phase;
+  if (p === "ask" || p === "reveal" || p === "rank") return 1000;
+  if (p === "idle") return 3000;
+  return 20000;
+}
+function loop() {
+  clearTimeout(timer);
+  if (document.hidden) return;
+  if (!document.querySelector(".sheet")) tick();
+  timer = setTimeout(loop, gap());
+}
+timer = setTimeout(loop, 1000);
+document.addEventListener("visibilitychange", function () { if (!document.hidden) loop(); });
 
 </script>
 
