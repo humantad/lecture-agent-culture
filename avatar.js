@@ -656,9 +656,10 @@
   // ---------- 영상 아바타·목소리(2026-10-31) ----------
   // 초상 한 장으로 OmniHuman 이 만든 「듣기」「말하기」 영상을 번갈아 돌린다 — 처음 만들 때만 비용, 재생은 무료.
   // 목소리는 대화 서버 /api/tts(Edge TTS, 무료). 기본 v4 Florian, 한 과목에 여럿이면 나눔(교수 지시 10-31).
-  const VIDEO = new Set(["kant", "leibniz", "hobbes", "barthes", "derrida", "foucault", "erasmus", "luther", "lee"]);
-  const VOICE = { kant: "v5", leibniz: "v4", hobbes: "v1", barthes: "v4", derrida: "v2", foucault: "v1", erasmus: "v4", luther: "v1", lee: "v5" };
+  const VIDEO = new Set(["kant", "leibniz", "hobbes", "barthes", "derrida", "foucault", "erasmus", "luther", "lee", "saussure", "levistrauss", "darwin"]);
+  const VOICE = { kant: "v5", leibniz: "v4", hobbes: "v1", barthes: "v4", derrida: "v2", foucault: "v1", erasmus: "v4", luther: "v1", lee: "v5", saussure: "v5", levistrauss: "v4o", darwin: "v4" };
   const voiceOf = (id) => VOICE[id] || "v4";
+  window.PhiloAvatarVideo = VIDEO; // 왼쪽 인물 목록도 영상 인물은 정지 사진(avatars/<id>.jpg)으로
 
   // ---------- 목소리 ----------
   const synth = "speechSynthesis" in window ? window.speechSynthesis : null;

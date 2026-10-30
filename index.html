@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>철학으로 읽는 사회와 문화 · 학습 도우미</title>
 <script src="vendor/vis-network.min.js"></script>
-<script src="avatar.js?v=1793388165"></script>
-<script src="quiz.js?v=1793388165" defer></script>
+<script src="avatar.js?v=1793392712"></script>
+<script src="quiz.js?v=1793392712" defer></script>
 <style>
 :root{
   --bg:#f6f5f2; --panel:#ffffff; --ink:#1f2328; --muted:#646b73; --line:#e3e0da;
@@ -454,7 +454,7 @@ function renderWeekBar(){
   wireFold($("#phbar"));
 }
 function goUnit(k){ if(tab!=="ana") $("#tabs").querySelector('[data-t="ana"]')?.click(); openUnit(k); }
-const face=id=>window.PhiloAvatarSVG?`<span class="ph-face">${PhiloAvatarSVG(id)}</span>`:"";
+const face=id=>window.PhiloAvatarVideo?.has(id)?`<span class="ph-face"><img src="avatars/${id}.jpg" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></span>`:window.PhiloAvatarSVG?`<span class="ph-face">${PhiloAvatarSVG(id)}</span>`:"";
 function renderPhs(){
   const list=course.philosophers.filter(p=>p.persona);
   // 인물이 여럿인 과목: 맡은 주차가 모두 중간고사 앞인 인물은 「중간고사 이전」 아래로 접는다
@@ -542,13 +542,15 @@ function openDefault(){ // 중간고사 뒤 범위가 있으면 그 첫 주차�
   const mine=sections.filter(x=>!ph||x.philosophers.includes(ph));
   const s=mine.find(x=>!preMid(x.week))||mine[0]; if(s) openUnit(`w${String(s.week).padStart(2,"0")}`);
 }
+// 주차 옆 짧은 주제(10-31 교수 지시) — 주차 제목에서 「 — 」·「:」·「(」 앞부분만
+const wkTopic=w=>String(course.weeks.find(x=>x.week===w)?.title||"").split(/\s+—\s+|:|\s*\(/)[0].trim();
 function renderSecs(){
   const list=sections.filter(s=>!ph||s.philosophers.includes(ph));
   let wk=null, pre="", post="", html=course.compare?`<button class="ph sec cmp ${curKey==="cmp"?"on":""}" data-k="cmp"><span><b>⚖ ${esc(phName(course.compare[0]))} ↔ ${esc(phName(course.compare[1]))}</b><br><small>같은 개념, 다른 설명</small></span></button>`:"";
   for(const s of list){
     let h="";
     if(s.week!==wk){wk=s.week; const k=`w${String(wk).padStart(2,"0")}`;
-      h+=`<div class="label" style="margin-top:8px">${wk}주</div><button class="ph sec ${k===curKey?"on":""}" data-k="${k}"><span><b>${wk}주 전체</b></span><small></small></button>`;}
+      h+=`<div class="label" style="margin-top:8px">${wk}주 ${esc(wkTopic(wk))}</div><button class="ph sec ${k===curKey?"on":""}" data-k="${k}"><span><b>${wk}주 전체</b></span><small></small></button>`;}
     h+=`<button class="ph sec ${s.key===curKey?"on":""}" data-k="${s.key}"><span>${esc(s.title)}</span><small title="논증 분석 ${s.cached?"있음":"없음"}">${s.cached?"●":"○"}</small></button>`;
     if(preMid(s.week)) pre+=h; else post+=h;
   }
