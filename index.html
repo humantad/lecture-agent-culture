@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>철학으로 읽는 사회와 문화 · 학습 도우미</title>
 <script src="vendor/vis-network.min.js"></script>
-<script src="avatar.js?v=1793378812"></script>
-<script src="quiz.js?v=1793378812" defer></script>
+<script src="avatar.js?v=1793381992"></script>
+<script src="quiz.js?v=1793381992" defer></script>
 <style>
 :root{
   --bg:#f6f5f2; --panel:#ffffff; --ink:#1f2328; --muted:#646b73; --line:#e3e0da;
@@ -120,6 +120,10 @@ textarea{flex:1;resize:none;height:48px;padding:11px 12px;border:1px solid var(-
 .av-stage{position:relative;display:flex;justify-content:center}
 .av-face{width:170px}
 .av-face svg{width:100%;height:auto;display:block}
+.av-vids{position:relative;width:100%;aspect-ratio:3/4;border-radius:12px;overflow:hidden;background:#111}
+.av-vids video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.av-vids .av-talk{opacity:0;transition:opacity .15s}
+.av-face.speaking .av-vids .av-talk{opacity:1}
 .av-eyes{animation:blink 5.5s infinite;transform-box:view-box;transform-origin:100px 98px}
 @keyframes blink{0%,95%,100%{transform:scaleY(1)}97%{transform:scaleY(.08)}}
 .av-face.speaking .av-mouth{animation:talk .17s infinite alternate;transform-box:view-box;transform-origin:100px 134px}
@@ -804,10 +808,16 @@ function lightbox(img){
 
 // ---------- 기말 대비 연습(2026-10-31) ----------
 // 「문제 받기」를 누르면 서버(/api/practice)가 시험 유형마다 한 문제씩 새로 만든다. 학생이 답을 써 보고 「정답·해설 보기」로 확인.
-let pracItems=[];
+let pracItems=[], pracTypes=null;
+async function loadPracTypes(){ // 유형 미리보기 — 어떤 유형이 나오는지 문제 받기 전에 보여 준다
+  if(pracTypes||!window.PHILO_API_BASE) return;
+  try{ pracTypes=await (await fetch(window.PHILO_API_BASE.replace(/\/$/,"")+"/api/practice?view=types")).json(); renderPrac(); }catch(e){}
+}
 function renderPrac(busy,err){
+  loadPracTypes();
   const can=!!window.PHILO_API_BASE||!STATIC;
   let h=`<div class="card"><h3>기말고사 대비 연습</h3><p class="src">중간고사 이후 수업 내용으로 시험 유형마다 한 문제씩 새로 만듭니다. 누를 때마다 다른 문제가 나옵니다. 자동으로 만든 문제라 수업 내용과 어긋나는 곳이 있으면 슬라이드를 기준으로 삼으세요.</p>
+  ${pracTypes?.types?.length?`<details ${pracItems.length?"":"open"} style="margin:6px 0 10px"><summary>시험 유형 미리보기 — ${pracTypes.types.length}가지 · 범위 ${esc(pracTypes.range)}</summary><ol style="margin:6px 0 0 18px;padding:0">${pracTypes.types.map(t=>`<li style="margin:4px 0"><b>${esc(t.label)}</b> <small class="src" style="margin:0">${esc(t.rule.replace(/\*\*/g,""))}</small></li>`).join("")}</ol></details>`:""}
   <button class="btn" id="pracGo" ${busy||!can?"disabled":""}>${busy?"문제를 만드는 중… (30초쯤)":"🎲 문제 받기"}</button>${err?`<p class="src" style="color:#c55">${esc(err)}</p>`:""}</div>`;
   h+=pracItems.map((x,i)=>`<div class="card"><h3>${i+1}. ${esc(x.label)}</h3><div class="pq">${esc(x.question)}</div>
     <textarea placeholder="여기에 답을 써 본 뒤 정답을 확인하세요"></textarea>

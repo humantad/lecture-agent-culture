@@ -653,6 +653,13 @@
     </svg>`;
   }
 
+  // ---------- 영상 아바타·목소리(2026-10-31) ----------
+  // 초상 한 장으로 OmniHuman 이 만든 「듣기」「말하기」 영상을 번갈아 돌린다 — 처음 만들 때만 비용, 재생은 무료.
+  // 목소리는 대화 서버 /api/tts(Edge TTS, 무료). 기본 v4 Florian, 한 과목에 여럿이면 나눔(교수 지시 10-31).
+  const VIDEO = new Set(["kant", "leibniz", "hobbes", "barthes", "derrida", "foucault", "erasmus"]); // luther 는 영상이 나오면 추가
+  const VOICE = { kant: "v5", leibniz: "v4", hobbes: "v1", barthes: "v4", derrida: "v2", foucault: "v1", erasmus: "v4", luther: "v1" };
+  const voiceOf = (id) => VOICE[id] || "v4";
+
   // ---------- 목소리 ----------
   const synth = "speechSynthesis" in window ? window.speechSynthesis : null;
   let voices = [];
@@ -732,12 +739,29 @@
     }
     function setSpeaking(on) {
       speaking = on; $("#avFace").classList.toggle("speaking", on);
+      const tv = $("#avFace").querySelector(".av-talk");
+      if (tv) { if (on) { tv.currentTime = 0; tv.play().catch(() => {}); } else tv.pause(); }
       if (on && !raf) raf = requestAnimationFrame(mouthLoop);
     }
     function pulse() { mouthT = 0.55 + Math.random() * 0.15; nextSyl = performance.now() + 120; } // 낱말 경계
     function thinking(on) { $("#avFace").classList.toggle("thinking", on); }
-    function say(text) {
-      if (!voiceOn || !synth || !text) return;
+    let audio = null;
+    async function say(text) {
+      if (!voiceOn || !text) return;
+      if (synth) synth.cancel();
+      if (audio) { audio.pause(); audio = null; }
+      if (window.PHILO_API_BASE) {
+        try {
+          const r = await fetch(window.PHILO_API_BASE.replace(/\/$/, "") + "/api/tts", { method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: speakable(text), voice: voiceOf(pid) }) });
+          if (r.ok) {
+            const a = new Audio(URL.createObjectURL(await r.blob())); audio = a;
+            a.onplay = () => setSpeaking(true); a.onended = a.onerror = a.onpause = () => setSpeaking(false);
+            await a.play(); return;
+          }
+        } catch (e) { /* 서버 목소리 실패 → 브라우저 음성 */ }
+      }
+      if (!synth) return;
       synth.cancel();
       const u = new SpeechSynthesisUtterance(speakable(text));
       const v = pickVoice(); if (v) u.voice = v;
@@ -815,7 +839,7 @@
       voiceOn = !voiceOn; $("#avVoice").textContent = voiceOn ? "🔊 목소리 켬" : "🔈 목소리 끔";
       $("#avVoice").classList.toggle("on", voiceOn);
       if (!synth && voiceOn) add("이 브라우저는 음성 합성을 지원하지 않습니다.", "sys");
-      if (!voiceOn && synth) { synth.cancel(); setSpeaking(false); }
+      if (!voiceOn) { if (synth) synth.cancel(); if (audio) audio.pause(); setSpeaking(false); }
       else say(`안녕하세요, ${opts.name(pid)}입니다.`);
     };
     $("#avForm").onsubmit = async (e) => {
@@ -869,8 +893,10 @@
       prefill(text) { $("#avQ").value = text; $("#avQ").focus(); },
       setPhilosopher(id, era, credit) {
         if (id === pid) return;
-        pid = id; history = []; touch(); if (synth) synth.cancel(); setSpeaking(false);
-        $("#avFace").innerHTML = svg(id);
+        pid = id; history = []; touch(); if (synth) synth.cancel(); if (audio) { audio.pause(); audio = null; } setSpeaking(false);
+        $("#avFace").innerHTML = VIDEO.has(id)
+          ? `<div class="av-vids"><video class="av-idle" src="avatars/${id}_idle.mp4" muted loop playsinline autoplay></video><video class="av-talk" src="avatars/${id}_talk.mp4" muted loop playsinline preload="auto"></video></div>`
+          : svg(id);
         $("#avCredit").textContent = credit || (FACES[id] && OLD_CREDIT[id]) || "";
         $("#avName").textContent = opts.name(id); $("#avEra").textContent = era || "";
         $("#avLog").innerHTML = `<div class="av-msg sys">${esc(opts.name(id))}에게 이 절의 내용을 물어보세요.${opts.askable ? "" : " (공개 사이트: 대화 서버 연결 전)"}</div>`;
