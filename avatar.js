@@ -695,6 +695,7 @@
     });
   }
 
+  window.PhiloClassCode = classCode; // 기말 대비 연습(index.html)도 같은 입장 코드를 쓴다
   window.PhiloAvatarSVG = svg; // 미리보기·점검용
   window.PhiloAvatar = function mount(root, opts) {
     // opts: { api(path, init), askable: bool, name(id), quotesFor(id)→[...], section()→key|null, portraitBase }
