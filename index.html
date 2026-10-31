@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>철학으로 읽는 사회와 문화 · 학습 도우미</title>
 <script src="vendor/vis-network.min.js"></script>
-<script src="avatar.js?v=1793407581"></script>
-<script src="quiz.js?v=1793407581" defer></script>
+<script src="avatar.js?v=1793413143"></script>
+<script src="quiz.js?v=1793413143" defer></script>
 <style>
 :root{
   --bg:#f6f5f2; --panel:#ffffff; --ink:#1f2328; --muted:#646b73; --line:#e3e0da;
@@ -189,6 +189,8 @@ textarea{flex:1;resize:none;height:48px;padding:11px 12px;border:1px solid var(-
 .av-ex{display:flex;flex-direction:column;gap:6px;margin:8px 0}
 .av-ex button{text-align:left;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:7px 10px;cursor:pointer;font:inherit;font-size:13.5px}
 .av-ex button:hover{border-color:var(--accent)}
+.prac-types{display:flex;flex-wrap:wrap;gap:6px}
+.prac-types .btn{margin:0}
 .av-ex b{font-size:12px;color:var(--muted);font-weight:600}
 .av-form{padding:8px 0 0}
 /* 기말 대비 연습 */
@@ -818,7 +820,7 @@ function lightbox(img){
 }
 
 // ---------- 기말 대비 연습(2026-10-31) ----------
-// 「문제 받기」를 누르면 서버(/api/practice)가 시험 유형마다 한 문제씩 새로 만든다. 학생이 답을 써 보고 「정답·해설 보기」로 확인.
+// 유형 단추를 누르면 서버(/api/practice)가 그 유형 한 문제를 새로 만든다(10분에 3문제). 학생이 답을 써 보고 「정답·해설 보기」로 확인.
 let pracItems=[], pracTypes=null;
 async function loadPracTypes(){ // 유형 미리보기 — 어떤 유형이 나오는지 문제 받기 전에 보여 준다
   if(pracTypes||!window.PHILO_API_BASE) return;
@@ -826,11 +828,12 @@ async function loadPracTypes(){ // 유형 미리보기 — 어떤 유형이 나�
 }
 function renderPrac(busy,err){
   loadPracTypes();
-  const can=!!window.PHILO_API_BASE||!STATIC;
-  let h=`<div class="card"><h3>기말고사 대비 연습</h3><p class="src">중간고사 이후 수업 내용으로 시험 유형마다 한 문제씩 새로 만듭니다. 누를 때마다 다른 문제가 나옵니다. 자동으로 만든 문제라 수업 내용과 어긋나는 곳이 있으면 슬라이드를 기준으로 삼으세요.</p>
-  ${pracTypes?.types?.length?`<details ${pracItems.length?"":"open"} style="margin:6px 0 10px"><summary>시험 유형 미리보기 — ${pracTypes.types.length}가지 · 범위 ${esc(pracTypes.range)}</summary><ol style="margin:6px 0 0 18px;padding:0">${pracTypes.types.map(t=>`<li style="margin:4px 0"><b>${esc(t.label)}</b> <small class="src" style="margin:0">${esc(t.rule.replace(/\*\*/g,""))}</small></li>`).join("")}</ol></details>`:""}
-  <button class="btn" id="pracGo" ${busy||!can?"disabled":""}>${busy?"문제를 만드는 중… (30초쯤)":"🎲 문제 받기"}</button>${err?`<p class="src" style="color:#c55">${esc(err)}</p>`:""}</div>`;
-  h+=pracItems.map((x,i)=>`<div class="card"><h3>${i+1}. ${esc(x.label)}</h3><div class="pq">${esc(x.question)}</div>
+  const can=!!window.PHILO_API_BASE||!STATIC, ts=pracTypes?.types||[];
+  let h=`<div class="card"><h3>기말고사 대비 연습</h3><p class="src">유형을 하나 고르면 중간고사 이후 수업 내용으로 그 유형 문제를 한 문제 새로 만듭니다. 10분에 3문제까지 받을 수 있습니다. 자동으로 만든 문제라 수업 내용과 어긋나는 곳이 있으면 슬라이드를 기준으로 삼으세요.</p>
+  ${ts.length?`<p class="src" style="margin:6px 0">범위: ${esc(pracTypes.range)}</p><div class="prac-types">${ts.map(t=>`<button class="btn" data-t="${esc(t.id)}" ${busy||!can?"disabled":""} title="${esc(t.rule.replace(/\*\*/g,""))}">${busy===t.id?"만드는 중… (30초쯤)":"🎲 "+esc(t.label)}</button>`).join("")}</div>
+  <details style="margin:8px 0 0"><summary>유형 설명 보기</summary><ol style="margin:6px 0 0 18px;padding:0">${ts.map(t=>`<li style="margin:4px 0"><b>${esc(t.label)}</b> <small class="src" style="margin:0">${esc(t.rule.replace(/\*\*/g,""))}</small></li>`).join("")}</ol></details>`:`<p class="src">유형을 불러오는 중…</p>`}
+  ${err?`<p class="src" style="color:#c55">${esc(err)}</p>`:""}</div>`;
+  h+=pracItems.map((x,i)=>`<div class="card"><h3>${pracItems.length-i}. ${esc(x.label)}</h3><div class="pq">${esc(x.question)}</div>
     <textarea placeholder="여기에 답을 써 본 뒤 정답을 확인하세요"></textarea>
     <details><summary>정답·해설 보기</summary><div class="pa"><b>정답</b>
 ${esc(x.answer)}
@@ -838,19 +841,20 @@ ${esc(x.answer)}
 <b>해설</b> ${esc(x.explain)}${x.refs?.length?`
 <small class="src">근거: ${esc(x.refs.join(", "))}</small>`:""}</div></details></div>`).join("");
   $("#prac").innerHTML=h;
-  const b=$("#pracGo"); if(b) b.onclick=getPrac;
+  $("#prac").querySelectorAll(".prac-types button").forEach(b=>b.onclick=()=>getPrac(b.dataset.t));
 }
-async function getPrac(){
-  renderPrac(true);
+async function getPrac(type){
+  renderPrac(type);
   const base=(window.PHILO_API_BASE||"").replace(/\/$/,"");
   let code=window.PhiloClassCode?await window.PhiloClassCode():"";
   for(let k=0;k<2;k++){
     try{
-      const res=await fetch(base+"/api/practice",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code,vid:philoVid(),staff:philoStaff()})});
+      const res=await fetch(base+"/api/practice",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code,type,vid:philoVid(),staff:philoStaff()})});
       const r=await res.json();
       if(res.status===401&&k===0&&window.PhiloClassCode){code=await window.PhiloClassCode(true,true);continue;}
+      if(res.status===429) throw new Error("10분에 3문제까지입니다. 잠시 뒤 다시 받아 주세요.");
       if(!res.ok) throw new Error(r.detail||res.status);
-      pracItems=r.items; renderPrac(); hit("prac_get",false); return;
+      pracItems=[...r.items,...pracItems]; renderPrac(); hit("prac_get",false); return;
     }catch(e){renderPrac(false,"문제를 받지 못했습니다: "+e.message);return;}
   }
 }
