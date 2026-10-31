@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>철학으로 읽는 사회와 문화 · 학습 도우미</title>
 <script src="vendor/vis-network.min.js"></script>
-<script src="avatar.js?v=1793392712"></script>
-<script src="quiz.js?v=1793392712" defer></script>
+<script src="avatar.js?v=1793407581"></script>
+<script src="quiz.js?v=1793407581" defer></script>
 <style>
 :root{
   --bg:#f6f5f2; --panel:#ffffff; --ink:#1f2328; --muted:#646b73; --line:#e3e0da;
@@ -268,6 +268,14 @@ textarea{flex:1;resize:none;height:48px;padding:11px 12px;border:1px solid var(-
   #avatar .av-head{grid-area:head;margin:0;cursor:pointer;min-width:0}
   #avatar .av-era{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #avatar .av-log,#avatar .av-note{display:none}
+  /* 접힌 막대에서도 추천 질문은 입력창 아래 가로 줄로 보인다 */
+  #avatar:not(.open){grid-template-areas:"face head" "face form" "ex ex"}
+  #avatar:not(.open) .av-log{display:block;grid-area:ex;max-height:none;overflow:visible;margin:0;padding:0;border:0;min-height:0}
+  #avatar:not(.open) .av-log>*:not(.av-ex){display:none}
+  #avatar:not(.open) .av-ex{flex-direction:row;overflow-x:auto;margin:6px 0 0;scrollbar-width:none}
+  #avatar:not(.open) .av-ex::-webkit-scrollbar{display:none}
+  #avatar:not(.open) .av-ex b{display:none}
+  #avatar:not(.open) .av-ex button{flex-shrink:0;white-space:nowrap;border-radius:16px;padding:5px 11px;font-size:13px}
   #avatar .av-form{grid-area:form;margin:4px 0 0;padding:0;border:0}
   .av-toggle{display:inline-block;border:0;background:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px}
   #avatar.open{grid-template-columns:64px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;grid-template-areas:"face head" "log log" "form form";height:78vh}
