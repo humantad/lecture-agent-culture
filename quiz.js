@@ -5,6 +5,81 @@
  * 화면에 나오는 것은 닉네임뿐이고 학번은 입장할 때만 보낸다.
  */
 (function () {
+  // 소리 엔진(2026-11-17 2판) — 마림바·종·나무 블록 음색 + 잔향. 파일 없음.
+  function philoSfxEngine() {
+    var A = null, OUT = null, REV = null;
+    function ac() {
+      if (!A) {
+        A = new (window.AudioContext || window.webkitAudioContext)();
+        var comp = A.createDynamicsCompressor(); comp.threshold.value = -18; comp.ratio.value = 4; comp.connect(A.destination);
+        OUT = A.createGain(); OUT.gain.value = 0.9; OUT.connect(comp);
+        var len = Math.floor(A.sampleRate * 1.6), ir = A.createBuffer(2, len, A.sampleRate);
+        for (var c = 0; c < 2; c++) { var d = ir.getChannelData(c); for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3); }
+        var cv = A.createConvolver(); cv.buffer = ir; REV = A.createGain(); REV.gain.value = 0.22; REV.connect(cv); cv.connect(comp);
+      }
+      if (A.state === "suspended") A.resume();
+      return A;
+    }
+    function env(g, t0, atk, dur, vol) { g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + atk); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur); }
+    function route(g, wet) { g.connect(OUT); if (wet !== false) g.connect(REV); }
+    function osc(type, f, t0, dur, vol, wet, f2) {
+      var o = A.createOscillator(), g = A.createGain(); o.type = type; o.frequency.setValueAtTime(f, t0);
+      if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0 + dur * 0.8);
+      env(g, t0, 0.005, dur, vol); o.connect(g); route(g, wet); o.start(t0); o.stop(t0 + dur + 0.05);
+    }
+    // 마림바: 기음 + 4배음(빨리 사라짐)
+    function marimba(f, t, vol) { var t0 = ac().currentTime + t; osc("sine", f, t0, 0.7, vol || 0.25); osc("sine", f * 4, t0, 0.12, (vol || 0.25) * 0.25); osc("sine", f * 10, t0, 0.03, (vol || 0.25) * 0.08, false); }
+    // 종(유리): 비정수 배음
+    function bell(f, t, vol, dur) { var t0 = ac().currentTime + t, v = vol || 0.12, d = dur || 1.6; osc("sine", f, t0, d, v); osc("sine", f * 2.76, t0, d * 0.5, v * 0.35); osc("sine", f * 5.4, t0, d * 0.25, v * 0.15); }
+    // 나무 블록
+    function wood(f, t, vol) {
+      var t0 = ac().currentTime + t; osc("sine", f, t0, 0.06, vol || 0.2, false, f * 0.92);
+      var n = Math.floor(A.sampleRate * 0.02), b = A.createBuffer(1, n, A.sampleRate), d = b.getChannelData(0);
+      for (var i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+      var s = A.createBufferSource(), bp = A.createBiquadFilter(), g = A.createGain(); s.buffer = b; bp.type = "bandpass"; bp.frequency.value = f * 1.5; bp.Q.value = 3; g.gain.value = (vol || 0.2) * 0.6;
+      s.connect(bp); bp.connect(g); route(g, false); s.start(t0);
+    }
+    // 부드러운 패드(낮은 통과 필터를 거친 삼각파)
+    function pad(fs, t, dur, vol) {
+      var t0 = ac().currentTime + t, lp = A.createBiquadFilter(), g = A.createGain(); lp.type = "lowpass"; lp.frequency.value = 1400;
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol || 0.08, t0 + 0.12); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      lp.connect(g); route(g);
+      fs.forEach(function (f) { [-4, 4].forEach(function (dt) { var o = A.createOscillator(); o.type = "triangle"; o.frequency.value = f; o.detune.value = dt; o.connect(lp); o.start(t0); o.stop(t0 + dur + 0.1); }); });
+    }
+    // 바람 소리(필터 훑기)
+    function swell(t, dur, vol) {
+      var t0 = ac().currentTime + t, n = Math.floor(A.sampleRate * dur), b = A.createBuffer(1, n, A.sampleRate), d = b.getChannelData(0);
+      for (var i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+      var s = A.createBufferSource(), bp = A.createBiquadFilter(), g = A.createGain(); s.buffer = b; bp.type = "bandpass"; bp.Q.value = 1.2;
+      bp.frequency.setValueAtTime(300, t0); bp.frequency.exponentialRampToValueAtTime(4000, t0 + dur);
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol || 0.12, t0 + dur * 0.9); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur + 0.05);
+      s.connect(bp); bp.connect(g); route(g); s.start(t0);
+    }
+    var C5 = 523.25, E5 = 659.25, G5 = 783.99, A5 = 880, B5 = 987.77, C6 = 1046.5, D6 = 1174.7, E6 = 1318.5, G6 = 1568, B6 = 1975.5;
+    var K = {
+      // 교수 진행 화면
+      join: function () { bell(G6, 0, 0.07, 0.6); },
+      start: function () { [C5, E5, G5, C6].forEach(function (f, i) { marimba(f, i * 0.08, 0.22); }); pad([261.63, 329.63, 392], 0.3, 1.2, 0.05); },
+      tick: function () { wood(1600, 0, 0.16); },
+      last: function () { wood(2100, 0, 0.22); },
+      timeup: function () { marimba(392, 0, 0.25); marimba(261.63, 0.12, 0.28); pad([130.81, 196], 0.12, 0.9, 0.06); },
+      reveal: function () { [E6, G6, B6].forEach(function (f, i) { bell(f, i * 0.06, 0.09, 1.8); }); },
+      rank: function () { swell(0, 0.9, 0.1); [G5, C6, E6].forEach(function (f) { bell(f, 0.9, 0.07, 1.6); }); },
+      fanfare: function () {
+        [[C5, 0], [E5, 0.14], [G5, 0.28], [C6, 0.42], [G5, 0.62], [C6, 0.76], [E6, 0.9]].forEach(function (x) { marimba(x[0], x[1], 0.22); });
+        pad([261.63, 329.63, 392, 523.25], 0.9, 2.2, 0.06);
+        [G6, C6 * 2, E6 * 2].forEach(function (f, i) { bell(f, 1.0 + i * 0.12, 0.05, 1.8); });
+      },
+      // 학생 휴대폰
+      pick: function () { wood(1300, 0, 0.14); },
+      ok: function () { marimba(E6 / 2, 0, 0.2); bell(B5, 0.1, 0.08, 1.2); bell(E6, 0.18, 0.08, 1.4); },
+      bad: function () { marimba(392, 0, 0.18); marimba(329.63, 0.14, 0.18); },
+      q: function () { marimba(G5, 0, 0.2); marimba(C6, 0.09, 0.2); },
+      end: function () { [C5, E5, G5, C6].forEach(function (f, i) { marimba(f, i * 0.1, 0.2); }); bell(E6, 0.45, 0.06, 1.6); }
+    };
+    return { play: function (k) { if (!K[k]) return; try { ac(); K[k](); } catch (e) {} }, unlock: function () { try { ac(); } catch (e) {} } };
+  }
+  
   var API = (window.PHILO_API_BASE || "").replace(/\/$/, "");
   if (!API) return;
   var vid = (window.philoVid && window.philoVid()) || (function () {
@@ -36,23 +111,8 @@
   try { sound = localStorage.getItem("quiz-sound") !== "0"; } catch (e) {}
 
   // 효과음 — 파일 없이 만든다. 학생이 화면을 한 번 누른 뒤부터 울린다.
-  var AC = null;
-  function beep(kind) {
-    if (!sound) return;
-    try {
-      AC = AC || new (window.AudioContext || window.webkitAudioContext)();
-      var notes = kind === "ok" ? [523, 659, 784] : kind === "bad" ? [330, 247] : kind === "q" ? [523, 784] : kind === "tick" ? [1200] : kind === "end" ? [523, 659, 784, 1046] : [660];
-      notes.forEach(function (f, i) {
-        var o = AC.createOscillator(), g = AC.createGain(), t0 = AC.currentTime + i * 0.09;
-        o.type = "sine"; o.frequency.value = f;
-        g.gain.setValueAtTime(0.0001, t0);
-        g.gain.exponentialRampToValueAtTime(0.16, t0 + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
-        o.connect(g); g.connect(AC.destination);
-        o.start(t0); o.stop(t0 + 0.25);
-      });
-    } catch (e) {}
-  }
+  var SE = philoSfxEngine();
+  function beep(kind) { if (sound) SE.play(kind); }
   var FACE = { ok: ["\ud83c\udf89", "\ud83e\udd73", "\u2728", "\ud83d\udc4f"], bad: ["\ud83d\udca7", "\ud83d\ude3f"] };
   function face(k) { var a = FACE[k] || FACE.ok; return a[Math.floor(Math.random() * a.length)]; }
   try { joinedQid = localStorage.getItem("quiz-joined") || ""; } catch (e) {}
