@@ -274,6 +274,8 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 
     <button id="close" class="stop" hidden>퀴즈 끝내기</button>
 
+    <button id="sfx" title="효과음 켜기/끄기">🔊</button>
+
   </span>
 
 </div>
@@ -960,6 +962,64 @@ function draw(s) {
 
 
 
+
+// 효과음(2026-11-17) — 파일 없이 WebAudio 로 만든다. 교실 스피커로 나가는 쪽은 이 화면. 🔊 단추로 끈다.
+var SFX = (function () {
+  var on = true, AC = null;
+  try { on = localStorage.getItem("host-sfx") !== "0"; } catch (e) {}
+  function ac() { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume(); return AC; }
+  function tone(f, t, dur, type, vol, f2) {
+    var a = ac(), o = a.createOscillator(), g = a.createGain(), t0 = a.currentTime + t;
+    o.type = type || "sine"; o.frequency.setValueAtTime(f, t0);
+    if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0 + dur);
+    g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol || 0.2, t0 + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g); g.connect(a.destination); o.start(t0); o.stop(t0 + dur + 0.05);
+  }
+  function noise(t, dur, vol) {
+    var a = ac(), n = Math.floor(a.sampleRate * dur), b = a.createBuffer(1, n, a.sampleRate), d = b.getChannelData(0);
+    for (var i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    var src = a.createBufferSource(), g = a.createGain(); src.buffer = b; g.gain.value = vol || 0.15;
+    src.connect(g); g.connect(a.destination); src.start(a.currentTime + t);
+  }
+  var K = {
+    join: function () { tone(880, 0, 0.12, "sine", 0.18, 1320); },
+    start: function () { [392, 523, 659, 784].forEach(function (f, i) { tone(f, i * 0.1, 0.25, "triangle", 0.22); }); tone(1046, 0.4, 0.5, "triangle", 0.2); },
+    tick: function () { tone(1000, 0, 0.06, "square", 0.08); },
+    last: function () { tone(1400, 0, 0.09, "square", 0.12); },
+    timeup: function () { tone(220, 0, 0.5, "sawtooth", 0.18, 160); },
+    reveal: function () { [659, 784, 988, 1319].forEach(function (f, i) { tone(f, i * 0.07, 0.35, "sine", 0.2); }); },
+    rank: function () { for (var i = 0; i < 14; i++) noise(i * 0.06, 0.05, 0.05 + i * 0.008); tone(523, 0.9, 0.4, "triangle", 0.22); tone(784, 0.9, 0.4, "triangle", 0.18); },
+    fanfare: function () {
+      [[523, 0], [523, 0.15], [523, 0.3], [659, 0.45], [784, 0.75], [659, 1.0], [784, 1.15], [1046, 1.4]].forEach(function (x) { tone(x[0], x[1], x[0] === 1046 ? 0.9 : 0.2, "triangle", 0.22); });
+      for (var i = 0; i < 6; i++) noise(1.4 + i * 0.12, 0.25, 0.06);
+    }
+  };
+  return {
+    play: function (k) { if (!on || !K[k]) return; try { K[k](); } catch (e) {} },
+    toggle: function () { on = !on; try { localStorage.setItem("host-sfx", on ? "1" : "0"); } catch (e) {} if (on) { try { ac(); } catch (e) {} } return on; },
+    on: function () { return on; },
+    unlock: function () { try { ac(); } catch (e) {} }
+  };
+})();
+(function () {
+  var b = document.getElementById("sfx"); if (!b) return;
+  b.textContent = SFX.on() ? "🔊" : "🔇";
+  b.onclick = function () { b.textContent = SFX.toggle() ? "🔊" : "🔇"; };
+  document.addEventListener("pointerdown", function () { SFX.unlock(); }, { once: true });
+})();
+var sfxPrev = null;
+function sfxStep(s) {
+  var p = sfxPrev; sfxPrev = { phase: s.phase, idx: s.idx, left: s.left, players: s.players || 0 };
+  if (!p) return;                                       // 처음 그릴 때는 울리지 않는다
+  if (s.phase === "idle" && (s.players || 0) > p.players) SFX.play("join");
+  if (s.phase === "ask" && (p.phase !== "ask" || p.idx !== s.idx)) { SFX.play("start"); return; }
+  if (s.phase === "ask" && s.left !== p.left && s.left >= 1 && s.left <= 5) SFX.play(s.left <= 3 ? "last" : "tick");
+  if (s.phase === "reveal" && p.phase === "ask") { SFX.play("timeup"); setTimeout(function () { SFX.play("reveal"); }, 550); }
+  if (s.phase === "rank" && p.phase !== "rank") SFX.play("rank");
+  if (s.phase === "done" && p.phase !== "done") SFX.play("fanfare");
+}
+
 function tick() {
 
   if (!API) { $("#st").textContent = "API 주소를 찾지 못했습니다 (?api= 로 주십시오)"; return; }
@@ -968,7 +1028,7 @@ function tick() {
 
   fetch(u, { cache: "no-store" }).then(function (r) { return r.json(); })
 
-    .then(function (s) { last = s; draw(s); }).catch(function () {});
+    .then(function (s) { last = s; draw(s); sfxStep(s); }).catch(function () {});
 
 }
 

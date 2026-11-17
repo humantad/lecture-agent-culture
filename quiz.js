@@ -15,7 +15,7 @@
   })();
 
   var box, state = null, joined = false, picked = -1, lastIdx = -1, timer = null, joinedQid = "";
-  var order = [], myText = "", myNick = "", lastPhase = "", sound = true, sidDone = false, full = false;
+  var lastLeft = -1, order = [], myText = "", myNick = "", lastPhase = "", sound = true, sidDone = false, full = false;
   // 수뭉이 — 상명대 마스코트. 화면마다 다른 표정을 쓴다.
   var MASCOT = (window.PHILO_STATIC ? "mascot/" : "/static/mascot/");
   var SM = {
@@ -41,7 +41,7 @@
     if (!sound) return;
     try {
       AC = AC || new (window.AudioContext || window.webkitAudioContext)();
-      var notes = kind === "ok" ? [523, 659, 784] : kind === "bad" ? [330, 247] : [660];
+      var notes = kind === "ok" ? [523, 659, 784] : kind === "bad" ? [330, 247] : kind === "q" ? [523, 784] : kind === "tick" ? [1200] : kind === "end" ? [523, 659, 784, 1046] : [660];
       notes.forEach(function (f, i) {
         var o = AC.createOscillator(), g = AC.createGain(), t0 = AC.currentTime + i * 0.09;
         o.type = "sine"; o.frequency.value = f;
@@ -503,6 +503,10 @@
         if (s && (s.phase === "idle" || s.phase === "none")) {
           picked = -1; order = []; myText = ""; lastIdx = -1; sidDone = false;   // 멈추면 비운다
         }
+        if (s && s.phase === "ask" && joined && (lastPhase !== "ask" || s.idx !== lastIdx)) beep("q");   // 새 문제(11-17)
+        if (s && s.phase === "ask" && joined && s.left !== lastLeft && s.left >= 1 && s.left <= 3) beep("tick");
+        if (s && s.phase === "done" && lastPhase && lastPhase !== "done" && joined) beep("end");
+        if (s) lastLeft = s.left;
         if (s && s.idx !== undefined && s.idx !== lastIdx) {
           picked = -1; lastIdx = s.idx; order = []; myText = "";
         }
