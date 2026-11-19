@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>철학으로 읽는 사회와 문화 · 학습 도우미</title>
 <script src="vendor/vis-network.min.js"></script>
-<script src="avatar.js?v=1795088519"></script>
-<script src="quiz.js?v=1795088519" defer></script>
+<script src="avatar.js?v=1795091634"></script>
+<script src="quiz.js?v=1795091634" defer></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap">
 <style>
@@ -485,14 +485,14 @@ const preMid=w=>!!course?.midterm&&w<course.midterm;
 const prePh=p=>p.weeks.length>0&&p.weeks.every(preMid);
 const foldKey=()=>"philo-fold-"+(course?.id||"");
 let foldOpen=null;
-function isFoldOpen(){ if(foldOpen===null){ try{foldOpen=localStorage.getItem(foldKey())==="1";}catch(e){foldOpen=false;} } return foldOpen; }
+function isFoldOpen(){ if(foldOpen===null) foldOpen=false; return foldOpen; } // 들어올 때마다 접힘(11-19) — 펼친 상태를 기억하지 않는다
 function foldBtn(weeks){
   const ws=[...new Set(weeks)].sort((a,b)=>a-b), r=ws.length>1?`${ws[0]}~${ws.at(-1)}주`:`${ws[0]}주`, o=isFoldOpen();
   return `<button type="button" class="fold ${o?"open":""}" aria-expanded="${o}" title="${o?"접기":"펼쳐 보기"}"><span>${o?"▾":"▸"} 중간고사 이전</span><small>${r}</small></button>`;
 }
 function wireFold(root){
   root.querySelectorAll(".fold").forEach(b=>b.onclick=e=>{e.stopPropagation(); foldOpen=!isFoldOpen();
-    try{localStorage.setItem(foldKey(),foldOpen?"1":"0");}catch(e){}
+    try{localStorage.removeItem(foldKey());}catch(e){}
     if(course.philosophers.filter(p=>p.persona).length<2) renderWeekBar(); else renderPhs();
     if(sections.length) renderSecs();});
 }
