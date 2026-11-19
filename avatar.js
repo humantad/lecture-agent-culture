@@ -841,7 +841,7 @@
       $("#avVoice").classList.toggle("on", voiceOn);
       if (!synth && voiceOn) add("이 브라우저는 음성 합성을 지원하지 않습니다.", "sys");
       if (!voiceOn) { if (synth) synth.cancel(); if (audio) audio.pause(); setSpeaking(false); }
-      else say(`안녕하세요, ${opts.name(pid)}입니다.`);
+      else say((pid === "lee" || /이청호/.test(opts.name(pid))) ? "안녕하세요." : `안녕하세요, ${opts.name(pid)}입니다.`); // 이청호 교수는 이름 없이(11-19)
     };
     $("#avForm").onsubmit = async (e) => {
       e.preventDefault(); const q = $("#avQ").value.trim(); if (!q || busy) return;
