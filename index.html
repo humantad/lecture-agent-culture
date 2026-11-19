@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>철학으로 읽는 사회와 문화 · 학습 도우미</title>
 <script src="vendor/vis-network.min.js"></script>
-<script src="avatar.js?v=1795093850"></script>
-<script src="quiz.js?v=1795093850" defer></script>
+<script src="avatar.js?v=1795095284"></script>
+<script src="quiz.js?v=1795095284" defer></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap">
 <style>
@@ -398,6 +398,7 @@ textarea:focus,.av-form input:focus{outline:none;border-color:var(--accent-2)!im
 .notice,.beyond{border-radius:12px}
 ::-webkit-scrollbar{width:10px}::-webkit-scrollbar-thumb{background:rgba(120,120,120,.3);border-radius:10px;border:3px solid transparent;background-clip:padding-box}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+.tt{border-collapse:collapse;margin:8px 0;font-variant-numeric:tabular-nums;white-space:normal}.tt th,.tt td{border:1px solid var(--line);padding:4px 10px;text-align:center;min-width:2.4em}.tt th{background:var(--me);font-weight:700}
 </style>
 </head>
 <body>
@@ -875,6 +876,18 @@ async function loadPracTypes(){ // 유형 미리보기 — 어떤 유형이 나�
   if(pracTypes||!window.PHILO_API_BASE) return;
   try{ pracTypes=await (await fetch(window.PHILO_API_BASE.replace(/\/$/,"")+"/api/practice?view=types")).json(); renderPrac(); }catch(e){}
 }
+// 연습 문제의 마크다운 표(| a | b |)를 표로 그린다(11-19, 진리표)
+function pracRich(t){
+  const L=String(t||"").split("\n"), out=[]; let i=0;
+  const cells=l=>l.trim().replace(/^\||\|$/g,"").split("|").map(c=>c.trim());
+  while(i<L.length){
+    if(/^\s*\|.*\|\s*$/.test(L[i])){ const rows=[]; while(i<L.length&&/^\s*\|.*\|\s*$/.test(L[i])) rows.push(L[i++]);
+      const body=rows.filter(r=>!/^\s*\|[\s:\-|]+\|\s*$/.test(r)); const head=body.shift();
+      out.push(`<table class="tt"><thead><tr>${cells(head).map(c=>`<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${body.map(r=>`<tr>${cells(r).map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table>`);
+    } else out.push(esc(L[i++])+"\n");
+  }
+  return out.join("");
+}
 function renderPrac(busy,err){
   loadPracTypes();
   const can=!!window.PHILO_API_BASE||!STATIC, ts=pracTypes?.types||[];
@@ -882,10 +895,10 @@ function renderPrac(busy,err){
   ${ts.length?`<p class="src" style="margin:6px 0">범위: ${esc(pracTypes.range)}</p><div class="prac-types">${ts.map(t=>`<button class="btn" data-t="${esc(t.id)}" ${busy||!can?"disabled":""} title="${esc(t.rule.replace(/\*\*/g,""))}">${busy===t.id?"만드는 중… (30초쯤)":"🎲 "+esc(t.label)}</button>`).join("")}</div>
   <details style="margin:8px 0 0"><summary>유형 설명 보기</summary><ol style="margin:6px 0 0 18px;padding:0">${ts.map(t=>`<li style="margin:4px 0"><b>${esc(t.label)}</b> <small class="src" style="margin:0">${esc(t.rule.replace(/\*\*/g,""))}</small></li>`).join("")}</ol></details>`:`<p class="src">유형을 불러오는 중…</p>`}
   ${err?`<p class="src" style="color:#c55">${esc(err)}</p>`:""}</div>`;
-  h+=pracItems.map((x,i)=>`<div class="card"><h3>${pracItems.length-i}. ${esc(x.label)}</h3><div class="pq">${esc(x.question)}</div>
+  h+=pracItems.map((x,i)=>`<div class="card"><h3>${pracItems.length-i}. ${esc(x.label)}</h3><div class="pq">${pracRich(x.question)}</div>
     <textarea placeholder="여기에 답을 써 본 뒤 정답을 확인하세요"></textarea>
     <details><summary>정답·해설 보기</summary><div class="pa"><b>정답</b>
-${esc(x.answer)}
+${pracRich(x.answer)}
 
 <b>해설</b> ${esc(x.explain)}${x.refs?.length?`
 <small class="src">근거: ${esc(x.refs.join(", "))}</small>`:""}</div></details></div>`).join("");
