@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>철학으로 읽는 사회와 문화 · 학습 도우미</title>
 <script src="vendor/vis-network.min.js"></script>
-<script src="avatar.js?v=1795091634"></script>
-<script src="quiz.js?v=1795091634" defer></script>
+<script src="avatar.js?v=1795092058"></script>
+<script src="quiz.js?v=1795092058" defer></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap">
 <style>
@@ -403,7 +403,7 @@ textarea:focus,.av-form input:focus{outline:none;border-color:var(--accent-2)!im
 <body>
 <div class="app">
   <aside id="side">
-    <h1 id="ctitle">철학적 사유의 향연</h1>
+    <h1 id="ctitle">철학적사유의향연</h1>
     <div class="sub" id="csub">학습 도우미 · 수업 자료 기반</div>
     <div id="chatSide">
       <div class="label">방식</div>
@@ -604,7 +604,7 @@ function openDefault(){ // 중간고사 뒤 범위가 있으면 그 첫 주차�
 // 주차 옆 짧은 주제(10-31 교수 지시) — 주차 제목에서 「 — 」·「:」·「(」 앞부분만
 const wkTopic=w=>String(course.weeks.find(x=>x.week===w)?.title||"").split(/\s+—\s+|:|\s*\(/)[0].trim();
 function renderSecs(){
-  const list=sections.filter(s=>!ph||s.philosophers.includes(ph));
+  const list=sections; // 인물과 상관없이 모든 주차를 늘 보인다(11-19)
   let wk=null, pre="", post="", html=course.compare?`<button class="ph sec cmp ${curKey==="cmp"?"on":""}" data-k="cmp"><span><b>⚖ ${esc(phName(course.compare[0]))} ↔ ${esc(phName(course.compare[1]))}</b><br><small>같은 개념, 다른 설명</small></span></button>`:"";
   for(const s of list){
     let h="";
@@ -1037,7 +1037,7 @@ function renderSources(){
 
 // ---------- 시작 ----------
 api("/api/course").then(r=>r.json()).then(c=>{
-  course=c; ph=(c.philosophers.find(p=>p.persona&&!prePh(p))||c.philosophers.find(p=>p.persona))?.id||null; $("#ctitle").textContent=c.title; document.title=`${c.title} · 학습 도우미`; $("#csub").textContent=`${c.semester} · 학습 도우미 · 이번 학기 슬라이드 기반`;
+  course=c; ph=(c.philosophers.find(p=>p.persona&&!prePh(p))||c.philosophers.find(p=>p.persona))?.id||null; $("#ctitle").textContent=c.title.replace(/\s+/g,""); document.title=`${c.title.replace(/\s+/g,"")} · 학습 도우미`; $("#csub").textContent=`${c.semester} · 학습 도우미 · 이번 학기 슬라이드 기반`;
   $("#llm").textContent=STATIC?"":c.llm?"":"⚠ LLM 미연결 — 자료 검색과 저장된 분석만 동작";
   renderPhs(); welcome(); setTimeout(refreshCounts,1500); hit(location.hash.slice(1).split("/")[0]||"ana",true);
   if(STATIC){ $("#tabs").querySelector('[data-t="chat"]').remove(); if(!location.hash) location.hash="ana"; }
